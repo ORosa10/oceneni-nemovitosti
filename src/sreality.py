@@ -17,6 +17,12 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 # Mapování segmentů URL na API parametry
 CATEGORY_MAIN = {"byty": 1, "domy": 2, "pozemky": 3, "komercni": 4, "ostatni": 5}
 CATEGORY_TYPE = {"prodej": 1, "pronajem": 2, "drazby": 3}
+# Kraje (locality_region_id)
+REGIONY = {"praha": 10, "hlavni-mesto-praha": 10, "stredocesky-kraj": 11,
+           "jihocesky-kraj": 12, "plzensky-kraj": 13, "karlovarsky-kraj": 14,
+           "ustecky-kraj": 15, "liberecky-kraj": 16, "kralovehradecky-kraj": 17,
+           "pardubicky-kraj": 18, "vysocina": 19, "jihomoravsky-kraj": 20,
+           "olomoucky-kraj": 21, "zlinsky-kraj": 25, "moravskoslezsky-kraj": 14}
 
 
 def _params_from_url(url: str) -> dict:
@@ -33,8 +39,9 @@ def _params_from_url(url: str) -> dict:
     znama = set(CATEGORY_TYPE) | set(CATEGORY_MAIN) | {"hledani"}
     lokalita = [s for s in seg if s not in znama]
     if lokalita:
-        params["locality_region_id"] = None  # necháme na fulltextu
-        params["query"] = lokalita[-1].replace("-", " ")
+        reg = REGIONY.get(lokalita[-1].lower())
+        if reg:
+            params["locality_region_id"] = reg
     # převezmi i případné query parametry z URL (cena, plocha…)
     for k, v in parse_qs(parsed.query).items():
         params[k] = v[0]
@@ -64,8 +71,12 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
     n = 0
     for page in range(1, max_pages + 1):
         r = requests.get(API, params={**params, "page": page}, headers=HEADERS, timeout=30)
+        print(f"strana {page}: HTTP {r.status_code}, url: {r.url}")
         r.raise_for_status()
-        estates = r.json().get("_embedded", {}).get("estates", [])
+        data = r.json()
+        if page == 1:
+            print(f"celkem nabídek dle API: {data.get('result_size')}")
+        estates = data.get("_embedded", {}).get("estates", [])
         if not estates:
             break
         for e in estates:
