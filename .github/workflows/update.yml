@@ -39,6 +39,9 @@ jobs:
           echo "=== test 3: bez www ==="
           curl -s -o /tmp/r3 -w "HTTP %{http_code}\n" -A "Mozilla/5.0" "https://sreality.cz/api/cs/v2/estates?per_page=2"
           head -c 300 /tmp/r3; echo
+          echo "=== test 5: kandidatni endpointy ==="
+          for u in "https://www.sreality.cz/api/v1/estates/search?category_main_cb=1&category_type_cb=1&locality_region_id=10&per_page=2" "https://www.sreality.cz/api/cs/v1/estates?per_page=2" "https://api.sreality.cz/api/cs/v2/estates?per_page=2"; do
+            echo "URL: $u"; curl -s -o /tmp/rx -w "HTTP %{http_code}\n" -A "Mozilla/5.0" "$u"; head -c 200 /tmp/rx; echo; done
           echo "=== test 4: frontend stranka ==="
           curl -s -o /tmp/r4 -w "HTTP %{http_code}\n" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126" "https://www.sreality.cz/hledani/prodej/byty/praha"
           head -c 200 /tmp/r4; echo
