@@ -1,0 +1,45 @@
+name: Denní aktualizace dat
+
+on:
+  push:
+    branches: [main]        # první naplnění dat hned po nahrání repa
+  schedule:
+    - cron: "0 4 * * *"   # každý den 4:00 UTC (6:00 v létě v ČR)
+  workflow_dispatch:        # + ruční spuštění tlačítkem
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalace závislostí
+        run: pip install -r requirements.txt
+
+      - name: Databáze (init při prvním běhu)
+        run: python -m src.main init
+
+      - name: Import ze Sreality (byty, Praha)
+        run: python -m src.main import-sreality "https://www.sreality.cz/hledani/prodej/byty/praha" --max-stranek 10
+        continue-on-error: true   # když Sreality změní API, publikuj aspoň stávající data
+
+      - name: Přepočet ocenění
+        run: python -m src.main ocenit
+
+      - name: Statická appka do docs/
+        run: python -m src.main build-static
+
+      - name: Commit dat
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/nemovitosti.db docs/
+          git diff --cached --quiet || git commit -m "Denní aktualizace dat ($(date +%F))"
+          git push

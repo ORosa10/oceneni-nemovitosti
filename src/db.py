@@ -1,0 +1,84 @@
+import csv
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DB_PATH = ROOT / "data" / "nemovitosti.db"
+PRICE_MAP_CSV = ROOT / "data" / "price_map.csv"
+
+LISTING_SLOUPCE = [
+    "source", "external_id", "url", "nazev", "dispozice", "ctvrt", "plocha_m2",
+    "cena_czk", "zakladni_cena_m2", "lokalita", "stav", "rok_vystavby",
+    "balkon", "parkovani", "dalsi_koef_pct", "najem_m2_mesic", "najem_priplatky_rocni",
+]
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS listings (
+    id INTEGER PRIMARY KEY, source TEXT NOT NULL, external_id TEXT, url TEXT,
+    nazev TEXT, dispozice TEXT, ctvrt TEXT, plocha_m2 REAL, cena_czk REAL,
+    zakladni_cena_m2 REAL, lokalita TEXT, stav TEXT, rok_vystavby INTEGER,
+    balkon TEXT DEFAULT 'Ne', parkovani TEXT DEFAULT 'Ne', dalsi_koef_pct REAL DEFAULT 0,
+    najem_m2_mesic REAL, najem_priplatky_rocni REAL DEFAULT 0,
+    active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT,
+    UNIQUE (source, external_id)
+);
+CREATE TABLE IF NOT EXISTS price_map (
+    klic TEXT PRIMARY KEY, ctvrt TEXT NOT NULL, cena_za_m2_czk REAL NOT NULL,
+    pocet_transakci INTEGER, updated_at TEXT
+);
+CREATE TABLE IF NOT EXISTS valuations (
+    listing_id INTEGER PRIMARY KEY REFERENCES listings(id),
+    koef_celkem REAL, vysledna_cena_m2 REAL, cena_za_byt REAL, priplatky_czk REAL,
+    trzni_hodnota REAL, rozdil_pct REAL, sleva_pct REAL, najem_rocni REAL,
+    prosty_vynos_pct REAL, celkovy_vynos_pct REAL, splatka_mesicni REAL,
+    najem_mesicni REAL, pokryti_splatky_pct REAL, computed_at TEXT
+);
+"""
+
+def connect():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    return con
+
+def init_db():
+    con = connect()
+    con.executescript(SCHEMA)
+    con.commit()
+    con.close()
+    load_price_map()
+    print(f"Databáze připravena: {DB_PATH}")
+
+def load_price_map():
+    con = connect()
+    con.executescript(SCHEMA)
+    now = datetime.now().isoformat(timespec="seconds")
+    n = 0
+    with open(PRICE_MAP_CSV, encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            con.execute(
+                "INSERT INTO price_map (klic, ctvrt, cena_za_m2_czk, pocet_transakci, updated_at) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT(klic) DO UPDATE SET ctvrt=excluded.ctvrt, "
+                "cena_za_m2_czk=excluded.cena_za_m2_czk, pocet_transakci=excluded.pocet_transakci, "
+                "updated_at=excluded.updated_at",
+                (row["klic"].strip(), row["ctvrt"].strip(),
+                 float(row["cena_za_m2_czk"]), int(row.get("pocet_transakci") or 0), now))
+            n += 1
+    con.commit()
+    con.close()
+    print(f"Cenová mapa nahrána: {n} čtvrtí.")
+    return n
+
+def upsert_listing(con, d):
+    now = datetime.now().isoformat(timespec="seconds")
+    data = {k: d.get(k) for k in LISTING_SLOUPCE}
+    if not data.get("balkon"): data["balkon"] = "Ne"
+    if not data.get("parkovani"): data["parkovani"] = "Ne"
+    cols = ", ".join(LISTING_SLOUPCE)
+    ph = ", ".join(":" + c for c in LISTING_SLOUPCE)
+    upd = ", ".join(f"{c}=excluded.{c}" for c in LISTING_SLOUPCE if c not in ("source", "external_id"))
+    con.execute(
+        f"INSERT INTO listings ({cols}, active, first_seen, last_seen) VALUES ({ph}, 1, :now, :now) "
+        f"ON CONFLICT(source, external_id) DO UPDATE SET {upd}, active=1, last_seen=excluded.last_seen",
+        {**data, "now": now})
