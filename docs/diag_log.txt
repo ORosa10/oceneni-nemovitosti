@@ -1,16 +1,8 @@
-delka html: 731018
-delka __NEXT_DATA__: 177043
-vyskyt hash_id v next_data: 0 | v html: 0
-vyskyt price_czk v next_data: 0 | v html: 0
-vyskyt "price" v next_data: 4 | v html: 4
-vyskyt estates v next_data: 8 | v html: 10
-vyskyt advert v next_data: 12 | v html: 12
-vyskyt results v next_data: 1 | v html: 1
-SEZNAM .props.pageProps.dehydratedState.queries [6], klice[0]: ['queryHash', 'queryKey', 'state']
-SEZNAM .props.pageProps.dehydratedState.queries[1].state.data.props.service.loginCfg.links [3], klice[0]: ['dataIcon', 'href', 'text']
-SEZNAM .props.pageProps.dehydratedState.queries[1].state.data.assets [4], klice[0]: ['optional', 'source', 'test', 'type']
-SEZNAM .props.pageProps.languageUrlItems [3], klice[0]: ['lang', 'selected', 'url']
-SEZNAM .scriptLoader [5], klice[0]: ['src', 'strategy']
+HTTP 200
+top-level klice: ['meta_description', 'meta_title', 'pagination', 'results', 'search_title', 'status_code', 'status_message']
+DICT pagination: ['limit', 'offset', 'total']
+SEZNAM results [100], klice: ['advert_images', 'advert_images_all', 'advert_name', 'category_main_cb', 'category_sub_cb', 'category_type_cb', 'discount_show', 'has_matterport_url', 'has_video', 'hash_id', 'locality', 'poi_atm_distance', 'poi_bus_public_transport_distance', 'poi_kindergarten_distance', 'poi_medic_distance', 'poi_metro_distance', 'poi_playground_distance', 'poi_post_office_distance', 'poi_restaurant_distance', 'poi_school_distance', 'poi_shop_distance', 'poi_small_shop_distance', 'poi_train_distance', 'poi_vet_distance', 'premise', 'premise_id', 'premise_logo', 'price', 'price_currency_cb', 'price_czk', 'price_czk_m2', 'price_summary', 'price_summary_czk', 'price_summary_unit_cb', 'price_unit_cb', 'user_id']
+  ukazka: {"advert_images": ["//d18-a.sdn.cz/d_18/c_img_qA_E/kcHp2YdDtEBMvI7LpGel5fk/2641.jpeg", "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5Do9kXBHdLGel5f0/215c.jpeg", "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5BWZuTBILZGel5gJ/0d88.jpeg"], "advert_images_all": [{"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/kcHp2YdDtEBMvI7LpGel5fk/2641.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079071}, {"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5Do9kXBHdLGel5f0/215c.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079071}, {"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5BWZuTBILZGel5gJ/0d88.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079071}, {"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5DwDWzBd8cGel5gg/42d0.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079071}, {"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/nCTUX1iX5CFdAHBI5uGel5gz/73c3.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079071}, {"advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qA_E/kcHp2YdDtBM3KV8NiGel5hI/1a97.jpeg", "restb_room_type": 4, "room_type_confidence": 0.699999988079
 === test 1: v2 estates, browser UA ===
 HTTP 404
 <html>
