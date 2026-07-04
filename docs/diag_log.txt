@@ -1,4 +1,4 @@
-python: can't open file '/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/scripts/diag_nextdata.py': [Errno 2] No such file or directory
+top-level klice: ['props', 'page', 'query', 'buildId', 'assetPrefix', 'isFallback', 'isExperimentalCompile', 'dynamicIds', 'gssp', 'appGip', 'locale', 'locales', 'defaultLocale', 'scriptLoader']
 === test 1: v2 estates, browser UA ===
 HTTP 404
 <html>
