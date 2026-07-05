@@ -1,12 +1,2 @@
-HTTP 200 | delka: 1113575
-vyskyt 'najem': 0
-vyskyt 'nájemné': 0
-vyskyt 'Kč/m': 0
-vyskyt 'geojson': 20
-vyskyt 'GeoJSON': 18
-vyskyt 'features': 5
-vyskyt 'plotly': 0
-vyskyt 'folium': 0
-vyskyt 'leaflet': 499
-vyskyt 'customdata': 0
-vyskyt 'hovertext': 0
+delka: 1113575
+vyskyt 'K\\u010d': 0
