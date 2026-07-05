@@ -34,6 +34,10 @@ jobs:
         run: python scripts/mfcr_najemne.py 2>&1 | tee docs/diag_log.txt
         continue-on-error: true
 
+      - name: Diagnostika detailů (dočasné)
+        run: python scripts/diag_detail.py 2>&1 | tee docs/diag_log.txt
+        continue-on-error: true
+
       - name: Přepočet ocenění
         run: python -m src.main ocenit
 
