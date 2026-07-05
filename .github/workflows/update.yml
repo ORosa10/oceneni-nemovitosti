@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: aktualizace-dat
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -50,4 +54,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/nemovitosti.db data/najemne_mfcr.csv docs/ 2>/dev/null || git add data/nemovitosti.db docs/
           git diff --cached --quiet || git commit -m "Denní aktualizace dat ($(date +%F))"
+          git pull --rebase origin main || true
           git push
