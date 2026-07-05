@@ -1,0 +1,4 @@
+testovací hash_id: 1001456460
+
+=== https://www.sreality.cz/api/v1/estates/1001456460 -> HTTP 200
+top-level klice: ['result', 'status_code', 'status_message']
