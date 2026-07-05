@@ -66,6 +66,9 @@ def _dispozice(nazev: str):
     return m.group(1) if m else None
 
 
+MIN_CENA = 100_000  # Sreality posílá 1 Kč u "ceny na vyžádání" — ignorovat
+
+
 def _cena(r) -> float | None:
     for k in ("price_czk", "price_summary_czk", "price"):
         v = r.get(k)
@@ -73,9 +76,10 @@ def _cena(r) -> float | None:
             v = v.get("value_raw") or v.get("amount")
         if v:
             try:
-                return float(str(v).replace(" ", ""))
+                cena = float(str(v).replace(" ", ""))
             except ValueError:
                 continue
+            return cena if cena >= MIN_CENA else None
     return None
 
 
