@@ -3,7 +3,12 @@
 import csv, json, re, requests
 
 UA = {"User-Agent": "Mozilla/5.0"}
-URL = "https://mf.gov.cz/assets/cs/cmsmedia/html_cenove-mapy/Mapa_Praha_15.5.2026.html"
+BASE = "https://mf.gov.cz"
+strana = requests.get(BASE + "/cs/rozpoctova-politika/podpora-projektoveho-rizeni/cenova-mapa/cenova-mapa-infografika",
+                      headers=UA, timeout=60).text
+m0 = re.search(r'src="(/assets/[^"]*Mapa_Praha[^"]*\.html)"', strana)
+URL = BASE + m0.group(1)
+print("aktuální mapa:", URL)
 html = requests.get(URL, headers=UA, timeout=60).content.decode("utf-8", errors="replace")
 
 m = re.search(r'<script type="application/json" data-for="htmlwidget[^"]*">(.*?)</script>', html, re.S)

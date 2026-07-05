@@ -1,9 +1,18 @@
 # Oceňovací logika — převzata 1:1 z Oceneni_Byt_InSheetTables.xlsx (list Praha).
 # JEDINÉ místo v projektu, kde se počítá tržní hodnota, sleva, výnos a hypotéka.
 # Písmena v komentářích = sloupce původního sheetu.
+import csv
+import re
 from datetime import datetime
 
 from . import db
+
+# Nájemné z cenové mapy MFČR (Kč/m²/měsíc, po čtvrtích a dispozicích).
+# Soubor data/najemne_mfcr.csv se extrahuje automaticky z mapy na mf.gov.cz.
+# Schváleno uživatelem 2026-07-05: čtvrť + dispozice → hodnota MFČR;
+# ručně zadané nájemné u nabídky má vždy přednost; bez dispozice se výnos nepočítá.
+NAJEMNE_MFCR_CSV = db.ROOT / "data" / "najemne_mfcr.csv"
+_SKUPINY = ["1+kk, 1+1", "2+kk, 2+1", "3+kk, 3+1", "4+kk, 4+1"]
 
 ROK_OCENENI = 2025  # sheet: =min(2025-K3,80) — při aktualizaci modelu změnit
 
@@ -87,9 +96,29 @@ def _norm(s):
     return s.strip().lower().replace(" ", "_").replace("-", "_")
 
 
-def ocenit_nabidku(l, mapa, mapa_najmu=None):
+def nacti_najemne_mfcr():
+    """{norm(čtvrť): {skupina: Kč/m²}} z data/najemne_mfcr.csv (MFČR, beze změn)."""
+    tab = {}
+    if not NAJEMNE_MFCR_CSV.exists():
+        return tab
+    with open(NAJEMNE_MFCR_CSV, encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            tab[_norm(row["ctvrt"])] = {
+                sk: float(row[sk]) for sk in _SKUPINY if row.get(sk)}
+    return tab
+
+
+def _skupina_dispozice(dispozice):
+    """Dispozice → sloupec MFČR: 1+kk/1+1→1, 2+…→2, 3+…→3, 4+ a větší→4."""
+    m = re.match(r"(\d)\s*\+", str(dispozice or ""))
+    if not m:
+        return None
+    return _SKUPINY[min(int(m.group(1)), 4) - 1]
+
+
+def ocenit_nabidku(l, mapa, najemne_mfcr=None):
     """Ocení jednu nabídku dle modelu. `mapa` = {klic: cena_za_m2} z price_map,
-    `mapa_najmu` = {klic: najem_m2_mesic} (fallback, když nabídka nemá ruční nájemné)."""
+    `najemne_mfcr` = tabulka MFČR {čtvrť: {skupina: Kč/m²}} (viz nacti_najemne_mfcr)."""
     plocha, cena = l.get("plocha_m2"), l.get("cena_czk")
     if not plocha or not cena:
         return None
@@ -127,8 +156,12 @@ def ocenit_nabidku(l, mapa, mapa_najmu=None):
         "pokryti_splatky_pct": None,
     }
 
-    # Nájem a výnos (AA–AL) — ruční nájemné z MFČR, jinak nájemní mapa čtvrti
-    najem_m2 = l.get("najem_m2_mesic") or (mapa_najmu or {}).get(_norm(l.get("ctvrt") or ""))
+    # Nájem a výnos (AA–AL) — ruční nájemné má přednost, jinak MFČR (čtvrť + dispozice)
+    najem_m2 = l.get("najem_m2_mesic")
+    if not najem_m2 and najemne_mfcr:
+        skupina = _skupina_dispozice(l.get("dispozice"))
+        if skupina:
+            najem_m2 = najemne_mfcr.get(_norm(l.get("ctvrt") or ""), {}).get(skupina)
     if najem_m2:
         rocni_m2 = najem_m2 * OBSAZENOST_MESICU                               # AB
         najem_rocni = rocni_m2 * koef * plocha + float(l.get("najem_priplatky_rocni") or 0)  # AD
@@ -156,13 +189,12 @@ def ocenit_vse():
     pm = [dict(r) for r in con.execute("SELECT * FROM price_map")]
     mapa = {_norm(r["klic"]): r["cena_za_m2_czk"] for r in pm}
     mapa.update({_norm(r["ctvrt"]): r["cena_za_m2_czk"] for r in pm})
-    mapa_najmu = {_norm(r["klic"]): r["najem_m2_mesic"] for r in pm if r.get("najem_m2_mesic")}
-    mapa_najmu.update({_norm(r["ctvrt"]): r["najem_m2_mesic"] for r in pm if r.get("najem_m2_mesic")})
+    najemne_mfcr = nacti_najemne_mfcr()
     now = datetime.now().isoformat(timespec="seconds")
     n, bez_mapy = 0, set()
     for l in con.execute("SELECT * FROM listings WHERE active=1"):
         l = dict(l)
-        v = ocenit_nabidku(l, mapa, mapa_najmu)
+        v = ocenit_nabidku(l, mapa, najemne_mfcr)
         if v is None:
             if l.get("ctvrt") and _norm(l["ctvrt"]) not in mapa:
                 bez_mapy.add(l["ctvrt"])
