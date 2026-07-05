@@ -32,6 +32,9 @@ src/
 ```
 
 ## Hard rules
+- ŽÁDNÉ TICHÉ NÁHRADY: když něco nejde udělat přesně tak, jak uživatel zadal
+  (zdroj dat nedostupný, API nefunguje…), ZASTAV SE a zeptej se. Nikdy nenahrazovat
+  zadání vlastním odhadem/odvozením bez výslovného souhlasu. Žádný black box.
 - Oceňovací logika je POUZE v `src/valuation.py` a `data/price_map.csv` — nikde jinde.
 - Nikdy nemazat záznamy z tabulky `listings`; nabídky se jen deaktivují (`active=0`).
 - Nepřepisovat `Report_pro_Codex_Google_Sheets_App.docx` (původní zadání, jen ke čtení).
@@ -59,7 +62,4 @@ koef lokalita (+5/0/−5 %), koef stav (0/+3/+6 %), koef věk (interpolace deká
 pásem +10 % → −12 %, věk = min(2025−rok, 80)), balkon +1,01 %, další koef ručně.
 Základní cena/m2: ručně ze Sreality cenové mapy, jinak z `data/price_map.csv`
 (99 pražských čtvrtí z uživatelova sheetu) × faktor velikosti bytu (40/57/75 m²).
-Sleva = −(cena/tržní − 1). Příležitost = sleva ≥ práh (výchozí 10 %).
-Navíc: nájemní výnos (obsazenost 10/12, růst 5 %, amortizace 0,3), IRR 20 let,
-hypotéka (LTV 80 %, sazba 4,2 %, 30 let, pokrytí splátky nájmem).
-Všechny konstanty: `src/valuation.py` (s odkazy na buňky původního sheetu).
+Sleva = −(cena/tržní − 1). Příležitost = sleva 
