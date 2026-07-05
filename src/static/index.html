@@ -63,6 +63,9 @@ a{color:var(--acc)}
   <input id="f-sleva" type="number" placeholder="např. 10" step="1">
   <h2>Min. výnos z nájmu (%)</h2>
   <input id="f-vynos" type="number" placeholder="např. 3" step="0.5">
+  <h2>Bez ceny</h2>
+  <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center">
+    <input id="f-bezceny" type="checkbox" style="width:auto">zobrazit „cena na vyžádání"</label>
   <button class="btn-p" onclick="render()">Filtrovat</button>
   <button class="btn-s" onclick="reset()">Zrušit filtry</button>
 </aside>
@@ -97,13 +100,15 @@ async function boot(){
 const vals=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 const num=id=>{const v=document.getElementById(id).value;return v===''?null:+v;};
 function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cena_czk');}render();}
-function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
+function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
 
 function render(){
   const ct=vals('f-ctvrt'), dp=vals('f-disp');
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         msl=num('f-sleva'), mvy=num('f-vynos');
+  const bez=document.getElementById('f-bezceny').checked;
   view=ALL.filter(r=>
+    (bez||r.cena_czk!=null) &&
     (!ct.length||ct.includes(r.ctvrt)) && (!dp.length||dp.includes(r.dispozice)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
@@ -118,7 +123,7 @@ function render(){
     return `<tr class="l" onclick="detail(${i},this)">
       <td class="${cls}">${pct(r.sleva_pct)}</td>
       <td>${r.nazev||''}</td><td>${r.ctvrt||''}</td><td>${r.dispozice||''}</td>
-      <td>${r.plocha_m2||''}</td><td>${fmt(r.cena_czk)}</td><td>${fmt(r.cena_m2)}</td>
+      <td>${r.plocha_m2||''}</td><td>${r.cena_czk==null?'na vyžádání':fmt(r.cena_czk)}</td><td>${fmt(r.cena_m2)}</td>
       <td>${fmt(r.trzni_hodnota)}</td><td>${pct(r.prosty_vynos_pct)}</td></tr>`;
   }).join('');
   const se=view.filter(r=>r.sleva_pct!=null);

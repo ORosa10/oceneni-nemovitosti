@@ -87,8 +87,9 @@ def _norm(s):
     return s.strip().lower().replace(" ", "_").replace("-", "_")
 
 
-def ocenit_nabidku(l, mapa):
-    """Ocení jednu nabídku dle modelu. `mapa` = {klic: cena_za_m2} z price_map."""
+def ocenit_nabidku(l, mapa, mapa_najmu=None):
+    """Ocení jednu nabídku dle modelu. `mapa` = {klic: cena_za_m2} z price_map,
+    `mapa_najmu` = {klic: najem_m2_mesic} (fallback, když nabídka nemá ruční nájemné)."""
     plocha, cena = l.get("plocha_m2"), l.get("cena_czk")
     if not plocha or not cena:
         return None
@@ -126,9 +127,10 @@ def ocenit_nabidku(l, mapa):
         "pokryti_splatky_pct": None,
     }
 
-    # Nájem a výnos (AA–AL) — jen pokud je zadané nájemné z cenové mapy MFČR
-    if l.get("najem_m2_mesic"):
-        rocni_m2 = l["najem_m2_mesic"] * OBSAZENOST_MESICU                    # AB
+    # Nájem a výnos (AA–AL) — ruční nájemné z MFČR, jinak nájemní mapa čtvrti
+    najem_m2 = l.get("najem_m2_mesic") or (mapa_najmu or {}).get(_norm(l.get("ctvrt") or ""))
+    if najem_m2:
+        rocni_m2 = najem_m2 * OBSAZENOST_MESICU                               # AB
         najem_rocni = rocni_m2 * koef * plocha + float(l.get("najem_priplatky_rocni") or 0)  # AD
         opravy = trzni * AMORTIZACE * (1 + RUST_NAJMU) ** 10                  # AH
         celkem_najem = ((1 + RUST_NAJMU) ** 20 - 1) / RUST_NAJMU * najem_rocni  # AI
@@ -151,13 +153,16 @@ def ocenit_nabidku(l, mapa):
 def ocenit_vse():
     """Ocení všechny aktivní nabídky a uloží do tabulky valuations."""
     con = db.connect()
-    mapa = {_norm(r["klic"]): r["cena_za_m2_czk"] for r in con.execute("SELECT * FROM price_map")}
-    mapa.update({_norm(r["ctvrt"]): r["cena_za_m2_czk"] for r in con.execute("SELECT * FROM price_map")})
+    pm = [dict(r) for r in con.execute("SELECT * FROM price_map")]
+    mapa = {_norm(r["klic"]): r["cena_za_m2_czk"] for r in pm}
+    mapa.update({_norm(r["ctvrt"]): r["cena_za_m2_czk"] for r in pm})
+    mapa_najmu = {_norm(r["klic"]): r["najem_m2_mesic"] for r in pm if r.get("najem_m2_mesic")}
+    mapa_najmu.update({_norm(r["ctvrt"]): r["najem_m2_mesic"] for r in pm if r.get("najem_m2_mesic")})
     now = datetime.now().isoformat(timespec="seconds")
     n, bez_mapy = 0, set()
     for l in con.execute("SELECT * FROM listings WHERE active=1"):
         l = dict(l)
-        v = ocenit_nabidku(l, mapa)
+        v = ocenit_nabidku(l, mapa, mapa_najmu)
         if v is None:
             if l.get("ctvrt") and _norm(l["ctvrt"]) not in mapa:
                 bez_mapy.add(l["ctvrt"])

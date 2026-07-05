@@ -23,7 +23,8 @@ def dump_data() -> dict:
     price_map = [dict(r) for r in con.execute("SELECT * FROM price_map")]
     con.close()
     for r in listings:
-        r["cena_m2"] = round(r["cena_czk"] / r["plocha_m2"]) if r.get("plocha_m2") else None
+        r["cena_m2"] = round(r["cena_czk"] / r["plocha_m2"]) \
+            if (r.get("plocha_m2") and r.get("cena_czk")) else None
     return {"generated": datetime.now().isoformat(timespec="seconds"),
             "listings": listings, "price_map": price_map}
 

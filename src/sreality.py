@@ -101,9 +101,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
             break
         for e in results:
             nazev = e.get("advert_name", "")
-            cena = _cena(e)
-            if not cena:
-                continue  # "cena na vyžádání" přeskočit
+            cena = _cena(e)  # None = "cena na vyžádání" → speciální kategorie bez ceny
             hash_id = str(e.get("hash_id"))
             db.upsert_listing(con, {
                 "source": "sreality",
