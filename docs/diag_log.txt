@@ -1,21 +1,10 @@
-### všechny Mapa_* soubory na stránce infografiky:
-MAPA: /assets/cs/cmsmedia/html_cenove-mapy/Mapa_%c4%8cR_15.5.2026.html
-MAPA: /assets/cs/cmsmedia/html_cenove-mapy/Mapa_Praha_15.5.2026.html
-
-### Mapa_Praha — hledání českých textů (unicode escapy i diakritika):
-'\u00e1jem': 0
-'\u011bs\u00edc': 0
-'nájem': 0
-'měsíc': 0
-'Průměr': 0
-'prodej': 0
-'Byty': 0
-'byty': 0
-'Kč': 0
-
-### konec souboru (posledních 1500 znaků):
-NÃ¡jemnÃ© referenÄnÃ­ho bytu: 308","KatastrÃ¡lnÃ­ ÃºzemÃ­: Å tÄrboholy , NÃ¡jemnÃ© referenÄnÃ­ho bytu: 345","KatastrÃ¡lnÃ­ ÃºzemÃ­: Å½iÅ¾kov , NÃ¡jemnÃ© referenÄnÃ­ho bytu: 342"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},{"color":"gold","weight":4,"bringToFront":false}]},{"method":"addLegend","args":[{"colors":["#FFFFFF , #9FDBFF 14.1025641025641%, #33A0FF 30.1282051282051%, #2936FF 46.1538461538462%, #0000C5 62.1794871794872%, #03047C 78.2051282051282%, #070638 94.2307692307692%, #000022 "],"labels":["350","400","450","500","550","600"],"na_color":null,"na_label":"NA","opacity":0.5,"position":"bottomright","type":"numeric","title":"NÃ¡jemnÃ© (KÄ/mÂ²)","extra":{"p_1":0.141025641025641,"p_n":0.9423076923076923},"layerId":null,"className":"info legend","group":"1+kk, 1+1"}]},{"method":"addLayersControl","args":[["1+kk, 1+1","2+kk, 2+1","3+kk, 3+1","4+kk, 4+1"],[],{"collapsed":false,"autoZIndex":true,"position":"topright"}]},{"method":"hideGroup","args":[["2+kk, 2+1","3+kk, 3+1","4+kk, 4+1"]]}],"limits":{"lat":[49.94197727136444,50.17750291352786],"lng":[14.22553915060774,14.70685800238797]}},"evals":[],"jsHooks":[]}</script>
-<script type="application/htmlwidget-sizing" data-for="htmlwidget-c8783d076adb853eedc4">{"viewer":{"width":"100%","height":400,"padding":0,"fill":true},"browser":{"width":"100%","height":400,"padding":0,"fill":true}}</script>
-</body>
-</html>
-
+skupin: ['1+kk, 1+1', '2+kk, 2+1', '3+kk, 3+1', '4+kk, 4+1'] | záznamů: 448
+ukázka:
+  Benice {'1+kk, 1+1': 439.0, '2+kk, 2+1': 359.0, '3+kk, 3+1': 314.0, '4+kk, 4+1': 354.0}
+  Bohnice {'1+kk, 1+1': 413.0, '2+kk, 2+1': 372.0, '3+kk, 3+1': 371.0, '4+kk, 4+1': 289.0}
+  Braník {'1+kk, 1+1': 416.0, '2+kk, 2+1': 348.0, '3+kk, 3+1': 328.0, '4+kk, 4+1': 318.0}
+  Bubeneč {'1+kk, 1+1': 430.0, '2+kk, 2+1': 383.0, '3+kk, 3+1': 354.0, '4+kk, 4+1': 324.0}
+  Běchovice {'1+kk, 1+1': 337.0, '2+kk, 2+1': 337.0, '3+kk, 3+1': 289.0, '4+kk, 4+1': 303.0}
+  Břevnov {'1+kk, 1+1': 404.0, '2+kk, 2+1': 360.0, '3+kk, 3+1': 323.0, '4+kk, 4+1': 307.0}
+  Březiněves {'1+kk, 1+1': 359.0, '2+kk, 2+1': 310.0, '3+kk, 3+1': 312.0, '4+kk, 4+1': 321.0}
+  Chodov {'1+kk, 1+1': 412.0, '2+kk, 2+1': 360.0, '3+kk, 3+1': 325.0, '4+kk, 4+1': 318.0}
