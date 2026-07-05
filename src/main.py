@@ -19,6 +19,9 @@ def main():
     p.add_argument("url")
     p.add_argument("--max-stranek", type=int, default=5)
 
+    p = sub.add_parser("import-detaily", help="dotáhne detaily nabídek ze Sreality (stav, rok, balkon, parkování)")
+    p.add_argument("--limit", type=int, default=500)
+
     sub.add_parser("ocenit", help="spočítá tržní hodnotu všech aktivních nabídek")
 
     p = sub.add_parser("prilezitosti", help="vypíše podhodnocené nabídky")
@@ -42,6 +45,9 @@ def main():
     elif a.cmd == "import-sreality":
         from . import sreality
         sreality.import_sreality(a.url, a.max_stranek)
+    elif a.cmd == "import-detaily":
+        from . import sreality_detail
+        sreality_detail.import_detaily(a.limit)
     elif a.cmd == "ocenit":
         from . import valuation
         valuation.ocenit_vse()
