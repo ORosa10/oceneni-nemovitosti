@@ -43,12 +43,13 @@ jobs:
         continue-on-error: true
 
       - name: Přepočet ocenění
-        run: python -m src.main ocenit
+        run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
 
       - name: Statická appka do docs/
-        run: python -m src.main build-static
+        run: python -m src.main build-static 2>&1 | tee docs/build_log.txt
 
       - name: Commit dat
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
