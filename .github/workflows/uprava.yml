@@ -1,0 +1,41 @@
+name: Ruční úprava nabídky
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: aktualizace-dat
+  cancel-in-progress: false
+
+jobs:
+  aplikuj:
+    # bezpečnost: úpravy přijímáme jen od vlastníka repozitáře
+    if: startsWith(github.event.issue.title, 'uprava:') && github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Aplikace úpravy
+        run: python scripts/aplikuj_upravu.py
+      - name: Přepočet a publikace
+        run: |
+          python -m src.main ocenit
+          python -m src.main build-static
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/nemovitosti.db docs/
+          git diff --cached --quiet || git commit -m "Ruční úprava nabídky (issue #${{ github.event.issue.number }})"
+          git pull --rebase origin main || true
+          git push
+      - name: Zavřít issue
+        run: gh issue close ${{ github.event.issue.number }} -c "Zapsáno a přepočítáno ✅"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

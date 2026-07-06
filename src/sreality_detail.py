@@ -98,7 +98,7 @@ def import_detaily(limit: int = 500) -> int:
             if chyby > 20:
                 print("příliš mnoho chyb, končím")
                 break
-        time.sleep(0.4)
+        time.sleep(0.25)
     con.commit()
     con.close()
     print(f"Detaily dotaženy: {n} nabídek (chyb: {chyby}).")
