@@ -1,17 +1,2 @@
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/src/main.py", line 66, in <module>
-    main()
-  File "/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/src/main.py", line 53, in main
-    valuation.ocenit_vse()
-  File "/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/src/valuation.py", line 197, in ocenit_vse
-    v = ocenit_nabidku(l, mapa, najemne_mfcr)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/src/valuation.py", line 136, in ocenit_nabidku
-    k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/work/oceneni-nemovitosti/oceneni-nemovitosti/src/valuation.py", line 59, in koef_vek
-    dolni = max(s for s, _ in VEK_PASMA if s <= vek)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ValueError: max() iterable argument is empty
+Oceněno 4540 nabídek.
+Čtvrti chybějící v cenové mapě (doplň data/price_map.csv, nebo zadej zakladni_cena_m2 ručně): Holyně, Hájek u Uhříněvsi, Koloděje, Královice, Lipence, Nedvězí u Říčan, Praha, Praha 1, Praha 10, Praha 2, Praha 4, Praha 5, Praha 6, Praha 7, Praha 9
