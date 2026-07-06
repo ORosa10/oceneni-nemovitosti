@@ -1,0 +1,4 @@
+chyba u 1654124620: 404 Client Error: Not Found for url: https://www.sreality.cz/api/v1/estates/1654124620
+chyba u 2891219020: 404 Client Error: Not Found for url: https://www.sreality.cz/api/v1/estates/2891219020
+chyba u 4254171212: 404 Client Error: Not Found for url: https://www.sreality.cz/api/v1/estates/4254171212
+Detaily dotaženy: 486 nabídek (chyb: 14).
