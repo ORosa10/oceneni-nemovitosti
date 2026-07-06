@@ -3,6 +3,8 @@
 #
 # POZOR: Neoficiální API — Sreality může formát kdykoli změnit. Diagnostika
 # posledního běhu v Actions: docs/import_log.txt
+import csv
+import json
 import re
 import time
 from urllib.parse import urlparse, parse_qs
@@ -10,6 +12,53 @@ from urllib.parse import urlparse, parse_qs
 import requests
 
 from . import db
+
+# Matice hodnocení lokality (kalibruje se v data/lokalita_matice.csv):
+# kritéria = vzdálenosti k POI ze Sreality; skóre → kategorie lokality modelu.
+MATICE_CSV = db.ROOT / "data" / "lokalita_matice.csv"
+KAT_PLUS = "u MHD / metro, u obchodu a služeb, tiché místo, parky v docházce"
+KAT_STANDARD = "standardní dostupnost, běžná občanská vybavenost, žádné extrémy"
+KAT_MINUS = "daleko od MHD/služeb, hluk / bariéry (rušná silnice, železnice), horší pěší dostupnost"
+
+
+def nacti_matici():
+    pravidla, hranice = [], {"min_skore": 4.0, "max_skore": -2.0}
+    if not MATICE_CSV.exists():
+        return pravidla, hranice
+    with open(MATICE_CSV, encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            if r["podminka"] in ("min_skore", "max_skore"):
+                hranice[r["podminka"]] = float(r["metry"])
+            elif r.get("pole"):
+                pravidla.append((r["kriterium"], r["pole"], r["podminka"],
+                                 float(r["metry"]), float(r["body"])))
+    return pravidla, hranice
+
+
+def ohodnot_lokalitu(estate, pravidla, hranice):
+    """Vrátí (kategorie, skóre, detail) z POI vzdáleností nabídky.
+    Pravidla 'do' se pro stejné pole vyhodnocují od nejmenší vzdálenosti,
+    platí první splněné; pravidla 'nad' se vyhodnocují všechna."""
+    skore, detail, pouzita_pole = 0.0, [], set()
+    for nazev, pole, podminka, metry, body in sorted(
+            pravidla, key=lambda x: (x[1], x[2] != "do", x[3])):
+        d = estate.get(pole)
+        if not isinstance(d, (int, float)):
+            continue
+        if podminka == "do" and (pole, "do") not in pouzita_pole and d <= metry:
+            pouzita_pole.add((pole, "do"))
+            skore += body
+            detail.append(f"{nazev} ({int(d)} m: {body:+g})")
+        elif podminka == "nad" and d > metry:
+            skore += body
+            detail.append(f"{nazev} ({int(d)} m: {body:+g})")
+    if skore >= hranice["min_skore"]:
+        kat = KAT_PLUS
+    elif skore <= hranice["max_skore"]:
+        kat = KAT_MINUS
+    else:
+        kat = KAT_STANDARD
+    return kat, skore, "; ".join(detail)
 
 API = "https://www.sreality.cz/api/v1/estates/search"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36",
@@ -86,6 +135,8 @@ def _cena(r) -> float | None:
 def import_sreality(url: str, max_pages: int = 5) -> int:
     params = _params_from_url(url)
     con = db.connect()
+    db.migruj(con)
+    pravidla, hranice = nacti_matici()
     n, offset, total = 0, 0, None
     videne = set()   # hash_id nabídek viděných v tomto importu
     for _ in range(max_pages):
@@ -105,6 +156,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
             cena = _cena(e)  # None = "cena na vyžádání" → speciální kategorie bez ceny
             hash_id = str(e.get("hash_id"))
             videne.add(hash_id)
+            kat, skore, detail = ohodnot_lokalitu(e, pravidla, hranice)
             db.upsert_listing(con, {
                 "source": "sreality",
                 "external_id": hash_id,
@@ -114,7 +166,10 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
                 "ctvrt": _ctvrt(e.get("locality")),
                 "plocha_m2": _plocha(nazev),
                 "cena_czk": cena,
-                # stav/lokalita/rok se doplní z detailu (import-detaily); prázdné = koef 0
+                # stav/rok/balkon/parkování doplní import-detaily
+                "lokalita_auto": kat,
+                "lokalita_skore": skore,
+                "lokalita_detail": detail,
             })
             n += 1
         offset += LIMIT

@@ -11,7 +11,20 @@ LISTING_SLOUPCE = [
     "source", "external_id", "url", "nazev", "dispozice", "ctvrt", "plocha_m2",
     "cena_czk", "zakladni_cena_m2", "lokalita", "stav", "rok_vystavby",
     "balkon", "parkovani", "dalsi_koef_pct", "najem_m2_mesic", "najem_priplatky_rocni",
+    "lokalita_auto", "lokalita_skore", "lokalita_detail",
 ]
+
+
+def migruj(con):
+    """Doplní nové sloupce do starších databází."""
+    for sql in ("ALTER TABLE listings ADD COLUMN detail_at TEXT",
+                "ALTER TABLE listings ADD COLUMN lokalita_auto TEXT",
+                "ALTER TABLE listings ADD COLUMN lokalita_skore REAL",
+                "ALTER TABLE listings ADD COLUMN lokalita_detail TEXT"):
+        try:
+            con.execute(sql)
+        except sqlite3.OperationalError:
+            pass
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS listings (
@@ -45,6 +58,7 @@ def connect():
 def init_db():
     con = connect()
     con.executescript(SCHEMA)
+    migruj(con)
     con.commit()
     con.close()
     load_price_map()
@@ -78,7 +92,8 @@ def load_price_map():
 # Pole, která import vždy přepíše (jsou v každém výpisu čerstvá).
 # Ostatní (stav, rok, balkon, parkování, nájemné…) se při UPDATE zachovají,
 # pokud nová hodnota chybí — jinak by denní import mazal dotažené detaily.
-PREPSAT_VZDY = {"url", "nazev", "dispozice", "ctvrt", "plocha_m2", "cena_czk"}
+PREPSAT_VZDY = {"url", "nazev", "dispozice", "ctvrt", "plocha_m2", "cena_czk",
+                "lokalita_auto", "lokalita_skore", "lokalita_detail"}
 
 
 def upsert_listing(con, d):

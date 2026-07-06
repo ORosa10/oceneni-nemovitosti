@@ -132,7 +132,8 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
             return None
         zakladni = cena_mapy * faktor_velikosti(plocha)
 
-    k_lok = LOKALITA.get(l.get("lokalita") or "", 0.0)                        # H
+    # H: ruční lokalita má přednost; jinak kategorie z POI matice (lokalita_auto)
+    k_lok = LOKALITA.get(l.get("lokalita") or l.get("lokalita_auto") or "", 0.0)
     k_stav = STAV.get((l.get("stav") or "").strip().lower(), 0.0)             # J×100
     k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
     k_balkon = BALKON_PCT if (l.get("balkon") or "").strip().lower() == "ano" else 0.0  # O

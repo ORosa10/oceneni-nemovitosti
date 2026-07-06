@@ -170,6 +170,8 @@ function detail(i,tr){
       <div class="kv"><span>Stav</span><b>${r.stav||'–'}</b></div>
       <div class="kv"><span>Rok výstavby</span><b>${r.rok_vystavby||'–'}</b></div>
       <div class="kv"><span>Balkon / parkování</span><b>${r.balkon||'–'} / ${r.parkovani||'–'}</b></div>
+      <div class="kv"><span>Lokalita (skóre ${r.lokalita_skore??'–'})</span><b>${(r.lokalita||r.lokalita_auto||'–').split(',')[0]}</b></div>
+      ${r.lokalita_detail?`<div class="kv" style="font-size:11px;color:var(--mut)">${r.lokalita_detail}</div>`:''}
       <div class="kv"><span>Zdroj</span><b>${r.source||'–'}</b></div>
       ${r.url?`<div class="kv"><span>Odkaz</span><a href="${r.url}" target="_blank">otevřít inzerát</a></div>`:''}</div>
   </div></td>`;
