@@ -75,14 +75,20 @@ def load_price_map():
     print(f"Cenová mapa nahrána: {n} čtvrtí.")
     return n
 
+# Pole, která import vždy přepíše (jsou v každém výpisu čerstvá).
+# Ostatní (stav, rok, balkon, parkování, nájemné…) se při UPDATE zachovají,
+# pokud nová hodnota chybí — jinak by denní import mazal dotažené detaily.
+PREPSAT_VZDY = {"url", "nazev", "dispozice", "ctvrt", "plocha_m2", "cena_czk"}
+
+
 def upsert_listing(con, d):
     now = datetime.now().isoformat(timespec="seconds")
     data = {k: d.get(k) for k in LISTING_SLOUPCE}
-    if not data.get("balkon"): data["balkon"] = "Ne"
-    if not data.get("parkovani"): data["parkovani"] = "Ne"
     cols = ", ".join(LISTING_SLOUPCE)
     ph = ", ".join(":" + c for c in LISTING_SLOUPCE)
-    upd = ", ".join(f"{c}=excluded.{c}" for c in LISTING_SLOUPCE if c not in ("source", "external_id"))
+    upd = ", ".join(
+        f"{c}=excluded.{c}" if c in PREPSAT_VZDY else f"{c}=COALESCE(excluded.{c}, {c})"
+        for c in LISTING_SLOUPCE if c not in ("source", "external_id"))
     con.execute(
         f"INSERT INTO listings ({cols}, active, first_seen, last_seen) VALUES ({ph}, 1, :now, :now) "
         f"ON CONFLICT(source, external_id) DO UPDATE SET {upd}, active=1, last_seen=excluded.last_seen",

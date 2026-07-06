@@ -114,9 +114,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
                 "ctvrt": _ctvrt(e.get("locality")),
                 "plocha_m2": _plocha(nazev),
                 "cena_czk": cena,
-                # Výchozí kategorie modelu — stav, lokalitu, rok atd. doplň ručně
-                "lokalita": "standardní dostupnost, běžná občanská vybavenost, žádné extrémy",
-                "stav": "Žádná / běžná údržba/Novostavba",
+                # stav/lokalita/rok se doplní z detailu (import-detaily); prázdné = koef 0
             })
             n += 1
         offset += LIMIT

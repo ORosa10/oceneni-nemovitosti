@@ -54,8 +54,9 @@ _VELIKOST_BODY = [(40, 160150 / 145431), (57, 140682 / 145431), (75, 137215 / 14
 
 
 def koef_vek(vek):
-    """M: lineární interpolace mezi dekádovými pásmy (vzorec ze sheetu)."""
-    vek = min(vek, 80) + 0.00001
+    """M: lineární interpolace mezi dekádovými pásmy (vzorec ze sheetu).
+    Věk < 0 (kolaudace v budoucnu) se bere jako 0 = novostavba (+10 %)."""
+    vek = min(max(vek, 0), 80) + 0.00001
     dolni = max(s for s, _ in VEK_PASMA if s <= vek)
     horni = dolni + 10
     k = dict(VEK_PASMA)
