@@ -10,5 +10,5 @@ obchod daleko,poi_shop_distance,nad,1000,-1,
 lékař/nemocnice,poi_medic_distance,do,1000,1,
 park/hřiště,poi_playground_distance,do,600,1,zeleň v docházce
 železnice u domu,poi_train_distance,do,250,-2,hluk vlaku
-hranice +5%,,min_skore,4,,skóre ≥ 4 = "u MHD/metro; obchody; parky" (+5 %)
-hranice -5%,,max_skore,-2,,skóre ≤ −2 = "daleko od MHD/služeb; hluk" (−5 %)
+hranice +5%,,min_skore,7,,"skóre ≥ 7 = ""u MHD/metro; obchody; parky"" (+5 %) — kalibrováno 2026-07-06"
+hranice -5%,,max_skore,1,,"skóre ≤ 1 = ""daleko od MHD/služeb; hluk"" (−5 %) — kalibrováno 2026-07-06"
