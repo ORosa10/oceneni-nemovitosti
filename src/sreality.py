@@ -87,6 +87,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
     params = _params_from_url(url)
     con = db.connect()
     n, offset, total = 0, 0, None
+    videne = set()   # hash_id nabídek viděných v tomto importu
     for _ in range(max_pages):
         r = requests.get(API, params={**params, "limit": LIMIT, "offset": offset},
                          headers=HEADERS, timeout=30)
@@ -103,6 +104,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
             nazev = e.get("advert_name", "")
             cena = _cena(e)  # None = "cena na vyžádání" → speciální kategorie bez ceny
             hash_id = str(e.get("hash_id"))
+            videne.add(hash_id)
             db.upsert_listing(con, {
                 "source": "sreality",
                 "external_id": hash_id,
@@ -121,6 +123,16 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
         if total and offset >= total:
             break
         time.sleep(1)  # šetrnost k API
+    # Deaktivace zmizelých nabídek (schváleno 2026-07-06): jen když import prošel
+    # celou nabídku (offset >= total) a viděl rozumný počet — pojistka proti výpadku API.
+    aktivnich = con.execute(
+        "SELECT COUNT(*) FROM listings WHERE source='sreality' AND active=1").fetchone()[0]
+    if total and offset >= total and len(videne) > 0.5 * max(aktivnich, 1):
+        ph = ",".join("?" * len(videne))
+        deakt = con.execute(
+            f"UPDATE listings SET active=0 WHERE source='sreality' AND active=1 "
+            f"AND external_id NOT IN ({ph})", tuple(videne)).rowcount
+        print(f"Deaktivováno zmizelých nabídek: {deakt}")
     con.commit()
     con.close()
     print(f"Importováno {n} nabídek ze Sreality.")
