@@ -186,19 +186,32 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
 
 
 def ocenit_vse():
-    """Ocení všechny aktivní nabídky a uloží do tabulky valuations."""
+    """Ocení všechny aktivní nabídky a uloží do tabulky valuations.
+
+    Nabídky, které mají cenu i plochu, ale jejichž čtvrť není v cenové mapě
+    a nemají ručně zadanou zakladni_cena_m2, se deaktivují (active=0) —
+    schváleno uživatelem 2026-07-07: šlo o malý počet (typicky nabídky
+    s obecným „Praha 5" bez konkrétní čtvrti, nebo okrajové čtvrti mimo
+    99 čtvrtí ze sheetu), nestojí za budování náhradního mapování a v appce
+    jen zbytečně visely bez ocenění. Nabídky bez CENY („cena na vyžádání")
+    se NEDEAKTIVUJÍ — to je samostatná, úmyslně zachovaná kategorie."""
     con = db.connect()
     pm = [dict(r) for r in con.execute("SELECT * FROM price_map")]
     mapa = {_norm(r["klic"]): r["cena_za_m2_czk"] for r in pm}
     mapa.update({_norm(r["ctvrt"]): r["cena_za_m2_czk"] for r in pm})
     najemne_mfcr = nacti_najemne_mfcr()
     now = datetime.now().isoformat(timespec="seconds")
-    n, bez_mapy = 0, set()
+    n, bez_mapy, deaktivovano = 0, set(), 0
     for l in con.execute("SELECT * FROM listings WHERE active=1"):
         l = dict(l)
         v = ocenit_nabidku(l, mapa, najemne_mfcr)
         if v is None:
-            if l.get("ctvrt") and _norm(l["ctvrt"]) not in mapa:
+            ma_cenu_a_plochu = bool(l.get("plocha_m2") and l.get("cena_czk"))
+            nema_mapu = (not l.get("zakladni_cena_m2") and l.get("ctvrt")
+                         and _norm(l["ctvrt"]) not in mapa)
+            if ma_cenu_a_plochu and nema_mapu:
+                con.execute("UPDATE listings SET active=0 WHERE id=?", (l["id"],))
+                deaktivovano += 1
                 bez_mapy.add(l["ctvrt"])
             continue
         cols = ", ".join(v)
@@ -212,7 +225,7 @@ def ocenit_vse():
     con.commit()
     con.close()
     print(f"Oceněno {n} nabídek.")
-    if bez_mapy:
-        print("Čtvrti chybějící v cenové mapě (doplň data/price_map.csv, nebo zadej "
-              "zakladni_cena_m2 ručně): " + ", ".join(sorted(bez_mapy)))
+    if deaktivovano:
+        print(f"Deaktivováno {deaktivovano} nabídek bez shody v cenové mapě "
+              "(čtvrti: " + ", ".join(sorted(bez_mapy)) + ").")
     return n
