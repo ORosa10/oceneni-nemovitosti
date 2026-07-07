@@ -165,15 +165,14 @@ nepočítá — žádné odhadování (výslovný požadavek uživatele).
 
 ## 7. STAV DAT K PŘEDÁNÍ
 
-4 934 aktivních nabídek, detaily dotažené u všech 4 934 (100 %). Z toho
-168 v kategorii „bez ceny" (Sreality „cena na vyžádání"). Oceněno (tabulka
-valuations) 4 701 nabídek — zbytek nemá cenu/plochu, nebo má čtvrť mimo
-99 čtvrtí cenové mapy (~12 takových čtvrtí/oblastí, typicky jen „Praha 5"
-bez konkrétní čtvrti). Nájemné MFČR načtené pro 112 katastrálních území.
-Lokalita: 8,2 % nabídek +5 % (405 ks), 84,4 % standard (4 164 ks), 7,4 %
-−5 % (365 ks) — symetrické dle kalibrace v bodě 5c. Neaktivních (zmizelých/
-deaktivovaných) je celkem 142 z 5 076 řádků historie. DB, data.json i appka
-jsou v sync s posledním denním během.
+4 733 aktivních nabídek, detaily dotažené u všech (100 %). Z toho 168
+v kategorii „bez ceny" (Sreality „cena na vyžádání" — úmyslně zachovaná
+kategorie, nedeaktivuje se). Oceněno (tabulka valuations) 4 565 nabídek.
+Nájemné MFČR načtené pro 112 katastrálních území. Lokalita: ~8 % nabídek
++5 %, ~84 % standard, ~7 % −5 % — symetrické dle kalibrace v bodě 5c.
+Neaktivních (zmizelých ze Sreality + nově i bez shody v cenové mapě, viz
+bod 8.3) je celkem 344. DB, data.json i appka jsou v sync s posledním
+denním během.
 
 ## 8. OTEVŘENÉ BODY (další práce)
 
@@ -184,9 +183,13 @@ jsou v sync s posledním denním během.
    hlídání nových nabídek nad prahem slevy, sledování zlevnění. Task smazat
    nebo předělat přes update_scheduled_task.
 2. **Kalibrace lokality** pokračuje podle zpětné vazby (viz zásada v 5c).
-3. **~200 nabídek bez čtvrti** (Sreality uvádí jen „Praha 5" apod.) se
-   neoceňuje. Možné řešení: mapování městská část → vážený průměr jejích
-   čtvrtí — JEN po schválení uživatelem.
+3. ~~**Nabídky bez shody v cenové mapě**~~ — VYŘEŠENO 2026-07-07: bylo
+   198 nabídek (typicky „Praha 5" bez konkrétní čtvrti, nebo pár okrajových
+   čtvrtí mimo 99 ze sheetu jako Lipence/Královice/Koloděje). Uživatel
+   rozhodl nebudovat náhradní mapování (příliš málo případů) a nabídky
+   rovnou deaktivovat — viz `ocenit_vse()` ve `valuation.py`, trvale
+   zapojeno do denní pipeline (deaktivuje se to samo i u budoucích nových
+   nabídek se stejným problémem).
 4. **List MimoPrahu** ze sheetu není implementován (jiná města).
 5. **Rok výstavby** u většiny inzerátů chybí (inzerenti neuvádějí) → koef
    věku 0. Případné dohledávání (katastr…) jen po dohodě.
