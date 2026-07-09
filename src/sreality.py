@@ -110,9 +110,29 @@ def _plocha(nazev: str):
     return float(m.group(1).replace(",", ".")) if m else None
 
 
-def _dispozice(nazev: str):
+def _dispozice(nazev: str, e: dict | None = None):
+    """Dispozice: primárně z category_sub_cb.name (přesné, ze Sreality),
+    fallback na regex z názvu inzerátu, pokud pole chybí."""
+    if e:
+        sub = (e.get("category_sub_cb") or {}).get("name")
+        if sub:
+            return sub
     m = re.search(r"(\d\+(?:kk|\d)|atypick)", nazev or "", re.I)
     return m.group(1) if m else None
+
+
+def _detail_url(e: dict, dispozice: str | None, hash_id: str) -> str:
+    """Sestaví skutečnou URL detailu (Sreality od 2026 vyžaduje reálný slug,
+    placeholder 'x/x' vrací 404 — zjištěno a ověřeno 2026-07-09 přes diagnostiku
+    v Actions + WebSearch). Slug se skládá z locality.*_seo_name polí, která
+    Sreality posílá přímo v odpovědi API — žádné vlastní odhadování."""
+    typ_prodej = "prodej"  # tento import řeší jen prodej bytů (viz CATEGORY_TYPE)
+    kategorie = "byt"
+    loc = e.get("locality") or {}
+    casti = [loc.get("city_seo_name"), loc.get("citypart_seo_name"), loc.get("street_seo_name")]
+    slug = "-".join(c for c in casti if c) or "x"
+    disp = dispozice or "x"
+    return f"https://www.sreality.cz/detail/{typ_prodej}/{kategorie}/{disp}/{slug}/{hash_id}"
 
 
 MIN_CENA = 100_000  # Sreality posílá 1 Kč u "ceny na vyžádání" — ignorovat
@@ -157,12 +177,13 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
             hash_id = str(e.get("hash_id"))
             videne.add(hash_id)
             kat, skore, detail = ohodnot_lokalitu(e, pravidla, hranice)
+            dispozice = _dispozice(nazev, e)
             db.upsert_listing(con, {
                 "source": "sreality",
                 "external_id": hash_id,
-                "url": f"https://www.sreality.cz/detail/prodej/byt/x/x/{hash_id}",
+                "url": _detail_url(e, dispozice, hash_id),
                 "nazev": nazev,
-                "dispozice": _dispozice(nazev),
+                "dispozice": dispozice,
                 "ctvrt": _ctvrt(e.get("locality")),
                 "plocha_m2": _plocha(nazev),
                 "cena_czk": cena,
