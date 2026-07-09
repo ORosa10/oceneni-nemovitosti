@@ -1,0 +1,174 @@
+{
+  "advert_images": [
+    "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CNPfpB1AGGr30AV/df52.png",
+    "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5Do9kXBXEuGr30A2/d7ff.png",
+    "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5DwDWzByGjGr3z67/4884.png"
+  ],
+  "advert_images_all": [
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CNPfpB1AGGr30AV/df52.png",
+      "restb_room_type": 0,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5Do9kXBXEuGr30A2/d7ff.png",
+      "restb_room_type": 0,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5DwDWzByGjGr3z67/4884.png",
+      "restb_room_type": 5,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQBNc3lTYGr30A1/d714.png",
+      "restb_room_type": 2,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CFdAHBXSWGr30A2/e2e6.png",
+      "restb_room_type": 1,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5Do9kXBXGEGr3z7A/eff0.png",
+      "restb_room_type": 4,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQKMBjVVGr3z6k/8d1c.png",
+      "restb_room_type": 4,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQCHBj1ThGr30Ao/4361.png",
+      "restb_room_type": 13,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CGpNZBXKaGr30BA/eee4.png",
+      "restb_room_type": 16,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQCsFBPTiGr3z6v/fdca.png",
+      "restb_room_type": 10,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQBNc3lTPGr3z7C/40da.png",
+      "restb_room_type": 10,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CoHumBXhkGr30Ah/043c.png",
+      "restb_room_type": 6,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/kO7neTVgOQqqsKS1Gr30AK/815d.png",
+      "restb_room_type": 6,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5BWLrlBXUyGr3z7G/6040.png",
+      "restb_room_type": 0,
+      "room_type_confidence": 0.699999988079071
+    },
+    {
+      "advert_image_sdn_url": "//d18-a.sdn.cz/d_18/c_img_qB_D/nCTUX1iX5CNPfpB1AFGr3z65/6aa4.png",
+      "restb_room_type": 9,
+      "room_type_confidence": 0.699999988079071
+    }
+  ],
+  "advert_name": "Prodej bytu 2+kk 84 m²",
+  "category_main_cb": {
+    "name": "Byty",
+    "value": 1
+  },
+  "category_sub_cb": {
+    "name": "2+kk",
+    "value": 4
+  },
+  "category_type_cb": {
+    "name": "Prodej",
+    "value": 1
+  },
+  "discount_show": false,
+  "has_matterport_url": false,
+  "has_video": false,
+  "hash_id": 2274857036,
+  "locality": {
+    "city": "Praha",
+    "city_seo_name": "praha",
+    "citypart": "Staré Město",
+    "citypart_seo_name": "stare-mesto",
+    "country": "Česká republika",
+    "country_id": 112,
+    "country_seo_name": "ceska-republika",
+    "district": "Praha 1",
+    "district_id": 5001,
+    "district_seo_name": "praha-1",
+    "entity_type": "address",
+    "geohash": "u2fkbn63kt",
+    "gps_lat": 50.08828988731737,
+    "gps_lon": 14.417346506641222,
+    "housenumber": null,
+    "inaccuracy_type": "street",
+    "municipality": null,
+    "municipality_id": 3468,
+    "municipality_seo_name": null,
+    "quarter": "Praha 1",
+    "quarter_id": 87,
+    "quarter_seo_name": "praha-1",
+    "region": "Hlavní město Praha",
+    "region_id": 10,
+    "region_seo_name": "hlavni-mesto-praha",
+    "street": "Kaprova",
+    "street_id": 120069,
+    "street_seo_name": "kaprova",
+    "streetnumber": null,
+    "ward": null,
+    "ward_id": 13674,
+    "ward_seo_name": null
+  },
+  "poi_atm_distance": 88,
+  "poi_bus_public_transport_distance": 67,
+  "poi_kindergarten_distance": 323,
+  "poi_medic_distance": 296,
+  "poi_metro_distance": 24,
+  "poi_playground_distance": 498,
+  "poi_post_office_distance": 666,
+  "poi_restaurant_distance": 71,
+  "poi_school_distance": 140,
+  "poi_shop_distance": 669,
+  "poi_small_shop_distance": 766,
+  "poi_train_distance": 1218,
+  "poi_vet_distance": 1525,
+  "premise": {
+    "city_seo_name": "",
+    "quarter_seo_name": "",
+    "seo_name": "",
+    "ward_seo_name": ""
+  },
+  "premise_id": null,
+  "premise_logo": "",
+  "price": 24000000.0,
+  "price_currency_cb": {
+    "name": "Kč",
+    "value": 1
+  },
+  "price_czk": 24000000.0,
+  "price_czk_m2": 285714,
+  "price_summary": 24000000.0,
+  "price_summary_czk": 24000000.0,
+  "price_summary_unit_cb": {
+    "name": "za nemovitost",
+    "value": 1
+  },
+  "price_unit_cb": {
+    "name": "za nemovitost",
+    "value": 1
+  },
+  "user_id": null
+}
