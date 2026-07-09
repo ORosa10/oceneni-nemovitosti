@@ -88,7 +88,7 @@ const fmt=n=>n==null?'–':Math.round(n).toLocaleString('cs-CZ');
 const pct=n=>n==null?'–':n.toLocaleString('cs-CZ',{maximumFractionDigits:1})+' %';
 
 async function boot(){
-  const d=await (await fetch('data.json',{cache:'no-store'})).json();
+  const d=await (await fetch('data.json')).json();
   ALL=d.listings; d.price_map.forEach(p=>MAPA[p.ctvrt]=p);
   document.getElementById('gen').textContent='data: '+(d.generated||'').replace('T',' ');
   const cts={}; ALL.forEach(r=>{if(r.ctvrt)cts[r.ctvrt]=(cts[r.ctvrt]||0)+1});
@@ -117,8 +117,15 @@ function render(){
   view.sort((a,b)=>{const x=a[sortKey],y=b[sortKey];
     if(x==null)return 1; if(y==null)return -1; return sortAsc?x-y:y-x;});
   const tb=document.getElementById('tb');
+  // Omezení počtu vykreslených řádků (CAP): appka měla u ~4600+ nabídek
+  // tendenci zamrznout po chvíli klikání — každé přefiltrování stavělo
+  // tisíce <tr> najednou. Řazení proběhne nad VŠEMI nabídkami (view),
+  // do DOM se ale posílá jen prvních CAP — souhrny (stats) níže počítají
+  // stále z celého view, takže čísla zůstávají správná.
+  const CAP=400;
+  const zobrazene=view.slice(0,CAP);
   if(!view.length){tb.innerHTML='<tr><td colspan="9" class="empty">Žádné nabídky — počkej na první běh importu, nebo uvolni filtry.</td></tr>';}
-  else tb.innerHTML=view.map((r,i)=>{
+  else tb.innerHTML=zobrazene.map((r,i)=>{
     const cls=r.sleva_pct>=15?'sleva-ok':r.sleva_pct>=5?'sleva-mid':'sleva-bad';
     return `<tr class="l" onclick="detail(${i},this)">
       <td class="${cls}">${pct(r.sleva_pct)}</td>
@@ -129,7 +136,7 @@ function render(){
   const se=view.filter(r=>r.sleva_pct!=null);
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
   document.getElementById('stats').innerHTML=
-    `<div class="stat"><b>${view.length}</b><span>nabídek</span></div>
+    `<div class="stat"><b>${view.length}</b><span>nabídek${view.length>CAP?` (zobrazeno prvních ${CAP})`:''}</span></div>
      <div class="stat"><b>${se.filter(r=>r.sleva_pct>=10).length}</b><span>příležitostí (sleva ≥ 10 %)</span></div>
      <div class="stat"><b>${pct(avg(se.map(r=>r.sleva_pct)))}</b><span>průměrná sleva</span></div>
      <div class="stat"><b>${fmt(avg(view.filter(r=>r.cena_m2).map(r=>r.cena_m2)))}</b><span>Ø Kč/m² (výběr)</span></div>`;
