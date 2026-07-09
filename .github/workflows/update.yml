@@ -45,15 +45,8 @@ jobs:
 
       - name: DIAGNOSTIKA seo/slug pole pro opravu URL nabídek (dočasné)
         run: |
-          python3 -c "
-import json, requests
-h = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', 'Accept': 'application/json'}
-r = requests.get('https://www.sreality.cz/api/v1/estates/search', params={'category_main_cb':1,'category_type_cb':1,'locality_region_id':10,'limit':1,'offset':0}, headers=h, timeout=30)
-open('docs/diag_search.txt','w',encoding='utf-8').write(json.dumps(r.json()['results'][0], ensure_ascii=False, indent=2))
-r2 = requests.get('https://www.sreality.cz/api/v1/estates/1396826956', headers=h, timeout=30)
-open('docs/diag_detail.txt','w',encoding='utf-8').write(json.dumps(r2.json(), ensure_ascii=False, indent=2))
-print('diag OK')
-"
+          python3 -c "import json, requests; h={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', 'Accept': 'application/json'}; r=requests.get('https://www.sreality.cz/api/v1/estates/search', params={'category_main_cb':1,'category_type_cb':1,'locality_region_id':10,'limit':1,'offset':0}, headers=h, timeout=30); open('docs/diag_search.txt','w',encoding='utf-8').write(json.dumps(r.json()['results'][0], ensure_ascii=False, indent=2)); r2=requests.get('https://www.sreality.cz/api/v1/estates/1396826956', headers=h, timeout=30); open('docs/diag_detail.txt','w',encoding='utf-8').write(json.dumps(r2.json(), ensure_ascii=False, indent=2)); print('diag OK')"
+        continue-on-error: true
 
       - name: Přepočet ocenění
         run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
