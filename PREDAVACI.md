@@ -14,6 +14,13 @@ modelu a ve webové appce ukáže, které nabídky jsou podhodnocené (sleva vů
 tržní hodnotě) a jaký mají nájemní výnos. Uživatel nic nespouští — vše běží
 na serverech GitHubu.
 
+**Rozsah (důležité, upřesněno 2026-07-10): projekt řeší VÝHRADNĚ byty k
+prodeji v Praze.** Rodinné domy, pozemky, komerční prostory a nemovitosti
+mimo Prahu NEJSOU součástí importu ani ocenění — cenová mapa i celý model
+jsou kalibrované jen na byty. Když se v datech objeví nabídka, která je
+fakticky dům/řadovka prodávaná přes kategorii "byt" (viz bod 8), model ji
+i tak počítá bytovým vzorcem — o tom ví bod 8, řešení čeká na uživatele.
+
 ## 2. ODKAZY A UMÍSTĚNÍ
 
 | Co | Kde |
@@ -116,8 +123,12 @@ běhy padaly na kolizi git push. Kroky:
    Nabídky „cena na vyžádání" (Sreality posílá 1 Kč) → cena_czk=NULL,
    speciální kategorie bez ceny (v appce checkbox).
 3. extrakce nájemného MFČR (jen když se změní mapa na mf.gov.cz)
-4. `import-detaily --limit 4000` — detail inzerátu
-   https://www.sreality.cz/api/v1/estates/{hash_id}, pauza 0,25 s/request
+4. `import-detaily --limit 500` — detail inzerátu
+   https://www.sreality.cz/api/v1/estates/{hash_id}, pauza 0,25 s/request.
+   POZOR (2026-07-10): limit byl dočasně zvýšen na 4000/den kvůli rychlému
+   dotažení počátečního zpoždění; jakmile bylo dosaženo 100% pokrytí, uživatel
+   nechal vrátit zpět na 500/den — bezpečnější tempo vůči riziku IP banu ze
+   Sreality. NEZVYŠOVAT bez výslovného souhlasu uživatele.
 5. `ocenit` → 6. `build-static` → 7. commit DB + docs/ zpět do repa
 Všechny kroky logují do docs/*.txt (continue-on-error u importů).
 
@@ -237,3 +248,11 @@ denním během.
 - 2026-07-07: přechod chatu z modelu Fable 5 na Sonnet 5 (v téže session/
   projektu, bez zakládání nové konverzace); protokol doplněn a čísla v
   bodě 7 aktualizována k tomuto dni.
+- 2026-07-09: opravena URL na Sreality (skutečný SEO slug místo placeholderu
+  x/x) a opravena appka, která zamrzávala u 4600+ nabídek (omezeno vykreslení
+  tabulky na 400 řádků).
+- 2026-07-10: uživatel upřesnil, že projekt/model je VÝHRADNĚ pro byty (bod 1)
+  — domy/pozemky nejsou a nebudou tiše zahrnuty do "hotovo". Uživatel také
+  nechal snížit `import-detaily` zpět na 500/den kvůli riziku IP banu ze
+  Sreality (dočasné zvýšení na 4000/den bylo jen pro rychlé dotažení
+  počátečního dluhu, ne trvalé nastavení).
