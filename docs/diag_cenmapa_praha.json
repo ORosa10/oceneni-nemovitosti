@@ -1,45 +1,24 @@
 {
-  "root_properties": [],
-  "root_languageUrlItems": null,
-  "root_praha_entry": {
-    "avgPricePerSqm": 148333,
-    "priceChange": null,
-    "locality": {
-      "entityId": 10,
-      "entityType": "region",
-      "name": "Hlavní město Praha",
-      "seoName": "hlavni-mesto-praha"
-    },
-    "numTransactions": 12509
-  },
+  "buildId": "1.0.497",
+  "page": "/cenova-mapa",
   "kandidati": {
-    "https://www.sreality.cz/cenova-mapa/ceska-republika/hlavni-mesto-praha": {
+    "https://www.sreality.cz/cenova-mapa/byty/hlavni-mesto-praha": {
       "status": 404,
-      "len": 80307,
-      "routeName": "NOT_FOUND",
-      "has_aggregatedLocalities": false,
-      "num_agg": 0
+      "routeName": "NOT_FOUND"
     },
-    "https://www.sreality.cz/cenova-mapa/praha": {
+    "https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha-10": {
       "status": 404,
-      "len": 80307,
-      "routeName": "NOT_FOUND",
-      "has_aggregatedLocalities": false,
-      "num_agg": 0
+      "routeName": "NOT_FOUND"
     },
-    "https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha/": {
+    "https://www.sreality.cz/_next/data/1.0.497/cenova-mapa/hlavni-mesto-praha.json": {
       "status": 404,
-      "len": 80307,
-      "routeName": "NOT_FOUND",
-      "has_aggregatedLocalities": false,
-      "num_agg": 0
+      "routeName": null
     },
-    "https://www.sreality.cz/cenova-mapa/10/hlavni-mesto-praha": {
-      "status": 404,
-      "len": 80307,
-      "routeName": "NOT_FOUND",
-      "has_aggregatedLocalities": false,
-      "num_agg": 0
+    "https://www.sreality.cz/sitemap.xml": {
+      "status": 200,
+      "routeName": null
     }
-  }
+  },
+  "sitemap_status": 200,
+  "sitemap_snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap1.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap2.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap3.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap4.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap5.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap6.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap7.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap8.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap9.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap10.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n<sitemap>\n    <loc>https://www.sreality.cz/sitemap11.xml.gz</loc>\n    <lastmod>2026-07-10</lastmod>\n</sitemap>\n</sitemapindex>\n"
 }
