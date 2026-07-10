@@ -14,30 +14,35 @@ def fetch(url):
 
 
 out = {}
-status, ln, data = fetch("https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha")
-out["http_status"] = status
-out["html_len"] = ln
-if data is None:
-    out["error"] = "__NEXT_DATA__ nenalezen"
-else:
-    pp = data["props"]["pageProps"]
-    out["pageProps_keys"] = list(pp.keys())
-    out["routeName"] = pp.get("routeName")
-    out["category"] = pp.get("category")
-    out["ancestorLocalities"] = pp.get("ancestorLocalities")
-    out["properties_type"] = str(type(pp.get("properties")))
-    out["overallPrice"] = pp.get("overallPrice")
-    out["aggregatedLocalities"] = pp.get("aggregatedLocalities")
-    ds = pp.get("dehydratedState") or {}
-    out["query_keys"] = [q.get("queryKey") for q in ds.get("queries", [])]
-    # najdi query, ktere ma data (state.data) pro PriceMapList
-    for q in ds.get("queries", []):
-        qk = q.get("queryKey")
-        if qk and "PriceMapList" in str(qk[0]):
-            out["PriceMapList_query"] = qk
-            st = q.get("state", {})
-            out["PriceMapList_data_type"] = str(type(st.get("data")))
-            out["PriceMapList_data_sample"] = st.get("data")
+
+# 1) Znovu koren, tentokrat dumpneme i 'properties' pole a hledame odkazy/href
+status, ln, data = fetch("https://www.sreality.cz/cenova-mapa")
+pp = data["props"]["pageProps"]
+out["root_properties"] = pp.get("properties")
+out["root_languageUrlItems"] = pp.get("languageUrlItems")
+al = pp.get("aggregatedLocalities") or []
+out["root_praha_entry"] = next((a for a in al if a["locality"]["seoName"] == "hlavni-mesto-praha"), None)
+
+# 2) Zkusime ruzne kandidatni URL pro Prahu
+kandidati = [
+    "https://www.sreality.cz/cenova-mapa/ceska-republika/hlavni-mesto-praha",
+    "https://www.sreality.cz/cenova-mapa/praha",
+    "https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha/",
+    "https://www.sreality.cz/cenova-mapa/10/hlavni-mesto-praha",
+]
+out["kandidati"] = {}
+for url in kandidati:
+    try:
+        st, l, d = fetch(url)
+        info = {"status": st, "len": l}
+        if d:
+            pp2 = d["props"]["pageProps"]
+            info["routeName"] = pp2.get("routeName")
+            info["has_aggregatedLocalities"] = bool(pp2.get("aggregatedLocalities"))
+            info["num_agg"] = len(pp2.get("aggregatedLocalities") or [])
+        out["kandidati"][url] = info
+    except Exception as e:
+        out["kandidati"][url] = {"chyba": str(e)}
 
 with open("docs/diag_cenmapa_praha.json", "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=2, default=str)
