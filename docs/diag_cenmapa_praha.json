@@ -1,7 +1,25 @@
 {
-  "praha_overallPrice": null,
-  "praha_ancestorLocalities": null,
-  "praha_num_aggregatedLocalities": 0,
-  "praha_aggregatedLocalities_sample": [],
-  "praha_aggregatedLocalities_all_names": []
+  "http_status": 404,
+  "html_len": 80307,
+  "pageProps_keys": [
+    "initialMode",
+    "viewportContent",
+    "isBot",
+    "platform",
+    "shouldLoadAppPromoBanner",
+    "abTestVariants",
+    "routeName",
+    "isScmpConsentGranted",
+    "isRenderedWithSeo",
+    "_ssrConfigName",
+    "_nextI18Next",
+    "dehydratedState"
+  ],
+  "routeName": "NOT_FOUND",
+  "category": null,
+  "ancestorLocalities": null,
+  "properties_type": "<class 'NoneType'>",
+  "overallPrice": null,
+  "aggregatedLocalities": null,
+  "query_keys": []
 }
