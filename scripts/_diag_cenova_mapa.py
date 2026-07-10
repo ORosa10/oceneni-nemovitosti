@@ -1,30 +1,53 @@
 """DOCASNY diagnosticky skript (smazat po dokonceni ukolu #16)."""
+import json
 import re
 import requests
 
 H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
 
+out = {}
+
+# buildId z korenove stranky
 r = requests.get("https://www.sreality.cz/cenova-mapa", headers=H, timeout=30)
-html = r.text
+m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
+data = json.loads(m.group(1))
+out["buildId"] = data.get("buildId")
+out["page"] = data.get("page")
 
-out_lines = []
-out_lines.append(f"status={r.status_code} len={len(html)}")
+def fetch(url):
+    rr = requests.get(url, headers=H, timeout=30)
+    mm = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', rr.text, re.S)
+    routeName = None
+    if mm:
+        try:
+            dd = json.loads(mm.group(1))
+            routeName = dd["props"]["pageProps"].get("routeName")
+        except Exception as e:
+            routeName = f"parse_err:{e}"
+    return rr.status_code, routeName
 
-# hrefy vedouci na cenova-mapa podstranky
-hrefy = sorted(set(re.findall(r'href=\\?"(/cenova-mapa[^"\\]*)"?', html)))
-out_lines.append(f"pocet unikatnich hrefu /cenova-mapa*: {len(hrefy)}")
-out_lines.extend(hrefy[:60])
+kandidati = [
+    "https://www.sreality.cz/cenova-mapa/byty/hlavni-mesto-praha",
+    "https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha-10",
+    f"https://www.sreality.cz/_next/data/{out['buildId']}/cenova-mapa/hlavni-mesto-praha.json",
+    "https://www.sreality.cz/sitemap.xml",
+]
+out["kandidati"] = {}
+for u in kandidati:
+    try:
+        st, rn = fetch(u)
+        out["kandidati"][u] = {"status": st, "routeName": rn}
+    except Exception as e:
+        out["kandidati"][u] = {"chyba": str(e)}
 
-# API volani pouzivana klientskym JS (hleda /api/ retezce)
-apis = sorted(set(re.findall(r'"(/api/[a-zA-Z0-9/_\\-]*)"', html)))
-out_lines.append(f"--- /api/ retezce ({len(apis)}) ---")
-out_lines.extend(apis[:60])
+# zkusime i sitemapindex
+try:
+    rs = requests.get("https://www.sreality.cz/sitemap.xml", headers=H, timeout=30)
+    out["sitemap_status"] = rs.status_code
+    out["sitemap_snippet"] = rs.text[:2000]
+except Exception as e:
+    out["sitemap_chyba"] = str(e)
 
-# cokoliv obsahujici 'priceMap' nebo 'pricemap' case-insensitive kolem API
-pm = sorted(set(re.findall(r'[\\w/-]*[Pp]rice[Mm]ap[\\w/-]*', html)))
-out_lines.append(f"--- priceMap retezce ({len(pm)}) ---")
-out_lines.extend(pm[:60])
-
-with open("docs/diag_cenmapa_hrefy.txt", "w", encoding="utf-8") as f:
-    f.write("\n".join(out_lines))
+with open("docs/diag_cenmapa_praha.json", "w", encoding="utf-8") as f:
+    json.dump(out, f, ensure_ascii=False, indent=2, default=str)
 print("hotovo")
