@@ -1,25 +1,45 @@
 {
-  "http_status": 404,
-  "html_len": 80307,
-  "pageProps_keys": [
-    "initialMode",
-    "viewportContent",
-    "isBot",
-    "platform",
-    "shouldLoadAppPromoBanner",
-    "abTestVariants",
-    "routeName",
-    "isScmpConsentGranted",
-    "isRenderedWithSeo",
-    "_ssrConfigName",
-    "_nextI18Next",
-    "dehydratedState"
-  ],
-  "routeName": "NOT_FOUND",
-  "category": null,
-  "ancestorLocalities": null,
-  "properties_type": "<class 'NoneType'>",
-  "overallPrice": null,
-  "aggregatedLocalities": null,
-  "query_keys": []
+  "root_properties": [],
+  "root_languageUrlItems": null,
+  "root_praha_entry": {
+    "avgPricePerSqm": 148333,
+    "priceChange": null,
+    "locality": {
+      "entityId": 10,
+      "entityType": "region",
+      "name": "Hlavní město Praha",
+      "seoName": "hlavni-mesto-praha"
+    },
+    "numTransactions": 12509
+  },
+  "kandidati": {
+    "https://www.sreality.cz/cenova-mapa/ceska-republika/hlavni-mesto-praha": {
+      "status": 404,
+      "len": 80307,
+      "routeName": "NOT_FOUND",
+      "has_aggregatedLocalities": false,
+      "num_agg": 0
+    },
+    "https://www.sreality.cz/cenova-mapa/praha": {
+      "status": 404,
+      "len": 80307,
+      "routeName": "NOT_FOUND",
+      "has_aggregatedLocalities": false,
+      "num_agg": 0
+    },
+    "https://www.sreality.cz/cenova-mapa/hlavni-mesto-praha/": {
+      "status": 404,
+      "len": 80307,
+      "routeName": "NOT_FOUND",
+      "has_aggregatedLocalities": false,
+      "num_agg": 0
+    },
+    "https://www.sreality.cz/cenova-mapa/10/hlavni-mesto-praha": {
+      "status": 404,
+      "len": 80307,
+      "routeName": "NOT_FOUND",
+      "has_aggregatedLocalities": false,
+      "num_agg": 0
+    }
+  }
 }
