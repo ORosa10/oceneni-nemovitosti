@@ -38,6 +38,10 @@ tr.l:hover{background:#1c2438;cursor:pointer}
 .card h3{font-size:11px;color:var(--mut);text-transform:uppercase;margin-bottom:6px}
 .kv{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;gap:10px}
 .kv span:first-child{color:var(--mut)}
+.calc .kv.step{padding-left:14px;font-size:12px;color:var(--mut);border-left:2px solid var(--line);margin-left:2px}
+.calc .kv.step b{color:var(--mut);font-weight:600}
+.calc .kv.sum{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px;font-weight:600}
+.calc .kv.sum.total{border-top:1px solid var(--acc);color:var(--tx);font-size:14px}
 a{color:var(--acc)}
 .empty{color:var(--mut);padding:40px;text-align:center}
 @media(max-width:800px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
@@ -86,6 +90,8 @@ a{color:var(--acc)}
 let ALL=[], MAPA={}, view=[], sortKey='sleva_pct', sortAsc=false;
 const fmt=n=>n==null?'–':Math.round(n).toLocaleString('cs-CZ');
 const pct=n=>n==null?'–':n.toLocaleString('cs-CZ',{maximumFractionDigits:1})+' %';
+const pctS=n=>n==null?'–':(n>0?'+':'')+n.toLocaleString('cs-CZ',{maximumFractionDigits:2})+' %';
+const mult=n=>n==null?'–':'× '+n.toLocaleString('cs-CZ',{maximumFractionDigits:4});
 
 async function boot(){
   const d=await (await fetch('data.json')).json();
@@ -152,13 +158,24 @@ function detail(i,tr){
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
   const row=document.createElement('tr'); row.className='detail'; row.dataset.i=i;
   row.innerHTML=`<td colspan="9"><div class="grid">
-    <div class="card"><h3>Ocenění modelem</h3>
-      <div class="kv"><span>Koef. celkem</span><b>${r.koef_celkem??'–'}</b></div>
-      <div class="kv"><span>Výsledná cena/m²</span><b>${fmt(r.vysledna_cena_m2)} Kč</b></div>
-      <div class="kv"><span>Cena za byt</span><b>${fmt(r.cena_za_byt)} Kč</b></div>
-      <div class="kv"><span>Příplatky</span><b>${fmt(r.priplatky_czk)} Kč</b></div>
-      <div class="kv"><span>Tržní hodnota</span><b>${fmt(r.trzni_hodnota)} Kč</b></div>
-      <div class="kv"><span>Rozdíl vs. cena</span><b>${pct(r.rozdil_pct)}</b></div></div>
+    <div class="card calc"><h3>Postup výpočtu tržní hodnoty</h3>
+      ${r.v_zakladni_rucne?`
+      <div class="kv"><span>Základní cena/m² (ručně zadáno)</span><b>${fmt(r.v_zakladni_cena_m2)} Kč</b></div>`:`
+      <div class="kv"><span>Cena z cenové mapy (${r.ctvrt||'–'})</span><b>${fmt(r.v_cena_mapy_m2)} Kč/m²</b></div>
+      <div class="kv step"><span>faktor velikosti bytu (${r.plocha_m2||'–'} m²)</span><b>${mult(r.v_faktor_velikosti)}</b></div>
+      <div class="kv sum"><span>= Základní cena/m²</span><b>${fmt(r.v_zakladni_cena_m2)} Kč</b></div>`}
+      <div class="kv step"><span>koef. lokalita</span><b>${pctS(r.v_koef_lokalita_pct)}</b></div>
+      <div class="kv step"><span>koef. stav</span><b>${pctS(r.v_koef_stav_pct)}</b></div>
+      <div class="kv step"><span>koef. věk${r.v_vek_pouzity!=null?' ('+r.v_vek_pouzity+' let)':''}</span><b>${pctS(r.v_koef_vek_pct)}</b></div>
+      <div class="kv step"><span>koef. balkon</span><b>${pctS(r.v_koef_balkon_pct)}</b></div>
+      <div class="kv step"><span>koef. další (ruční)</span><b>${pctS(r.v_koef_dalsi_pct)}</b></div>
+      <div class="kv sum"><span>= Výsledná cena/m² (koef. celkem ${r.koef_celkem??'–'})</span><b>${fmt(r.vysledna_cena_m2)} Kč</b></div>
+      <div class="kv step"><span>× plocha</span><b>× ${r.plocha_m2||'–'} m²</b></div>
+      <div class="kv sum"><span>= Cena za byt</span><b>${fmt(r.cena_za_byt)} Kč</b></div>
+      <div class="kv step"><span>+ příplatek (parkování: ${r.parkovani||'Ne'})</span><b>+ ${fmt(r.priplatky_czk)} Kč</b></div>
+      <div class="kv sum total"><span>= Tržní hodnota</span><b>${fmt(r.trzni_hodnota)} Kč</b></div>
+      <div class="kv"><span>Inzerovaná cena</span><b>${r.cena_czk==null?'na vyžádání':fmt(r.cena_czk)+' Kč'}</b></div>
+      <div class="kv"><span>Rozdíl (sleva vs. tržní)</span><b>${pct(r.sleva_pct)}</b></div></div>
     <div class="card"><h3>Peer group — ${r.ctvrt||'–'}</h3>
       <div class="kv"><span>Nabídek ve čtvrti</span><b>${peers.length}</b></div>
       <div class="kv"><span>Ø Kč/m² nabídky</span><b>${fmt(avg(cm2))}</b></div>

@@ -125,16 +125,21 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
         return None
 
     # F: základní cena/m2 — ručně zadaná, jinak cenová mapa × faktor velikosti
-    zakladni = l.get("zakladni_cena_m2")
-    if not zakladni:
+    zakladni_rucne = l.get("zakladni_cena_m2")
+    cena_mapy = None
+    velikost_faktor = faktor_velikosti(plocha)
+    if zakladni_rucne:
+        zakladni = zakladni_rucne
+    else:
         cena_mapy = mapa.get(_norm(l.get("ctvrt") or ""))
         if cena_mapy is None:
             return None
-        zakladni = cena_mapy * faktor_velikosti(plocha)
+        zakladni = cena_mapy * velikost_faktor
 
     # H: ruční lokalita má přednost; jinak kategorie z POI matice (lokalita_auto)
     k_lok = LOKALITA.get(l.get("lokalita") or l.get("lokalita_auto") or "", 0.0)
     k_stav = STAV.get((l.get("stav") or "").strip().lower(), 0.0)             # J×100
+    vek_pouzity = min(max(ROK_OCENENI - l["rok_vystavby"], 0), 80) if l.get("rok_vystavby") else None
     k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
     k_balkon = BALKON_PCT if (l.get("balkon") or "").strip().lower() == "ano" else 0.0  # O
     park = (l.get("parkovani") or "Ne").strip().lower()                       # P/Q
@@ -156,6 +161,16 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
         "sleva_pct": round(-rozdil, 2), "najem_rocni": None, "prosty_vynos_pct": None,
         "celkovy_vynos_pct": None, "splatka_mesicni": None, "najem_mesicni": None,
         "pokryti_splatky_pct": None,
+        # Rozpad výpočtu pro zobrazení v appce (krok za krokem) — doplněno
+        # 2026-07-10 na žádost uživatele („chci vidět cenu, koeficienty za
+        # sebou, výsledek"), nic nepočítá jinak, jen ukládá mezivýsledky.
+        "v_cena_mapy_m2": round(cena_mapy) if cena_mapy is not None else None,
+        "v_faktor_velikosti": round(velikost_faktor, 4),
+        "v_zakladni_cena_m2": round(zakladni),
+        "v_zakladni_rucne": bool(zakladni_rucne),
+        "v_koef_lokalita_pct": k_lok, "v_koef_stav_pct": k_stav,
+        "v_koef_vek_pct": round(k_vek, 2), "v_koef_balkon_pct": k_balkon,
+        "v_koef_dalsi_pct": k_dalsi, "v_vek_pouzity": vek_pouzity,
     }
 
     # Nájem a výnos (AA–AL) — ruční nájemné má přednost, jinak MFČR (čtvrť + dispozice)

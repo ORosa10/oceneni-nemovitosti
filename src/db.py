@@ -20,7 +20,18 @@ def migruj(con):
     for sql in ("ALTER TABLE listings ADD COLUMN detail_at TEXT",
                 "ALTER TABLE listings ADD COLUMN lokalita_auto TEXT",
                 "ALTER TABLE listings ADD COLUMN lokalita_skore REAL",
-                "ALTER TABLE listings ADD COLUMN lokalita_detail TEXT"):
+                "ALTER TABLE listings ADD COLUMN lokalita_detail TEXT",
+                # Rozpad výpočtu tržní hodnoty pro zobrazení v appce (2026-07-10)
+                "ALTER TABLE valuations ADD COLUMN v_cena_mapy_m2 REAL",
+                "ALTER TABLE valuations ADD COLUMN v_faktor_velikosti REAL",
+                "ALTER TABLE valuations ADD COLUMN v_zakladni_cena_m2 REAL",
+                "ALTER TABLE valuations ADD COLUMN v_zakladni_rucne INTEGER",
+                "ALTER TABLE valuations ADD COLUMN v_koef_lokalita_pct REAL",
+                "ALTER TABLE valuations ADD COLUMN v_koef_stav_pct REAL",
+                "ALTER TABLE valuations ADD COLUMN v_koef_vek_pct REAL",
+                "ALTER TABLE valuations ADD COLUMN v_koef_balkon_pct REAL",
+                "ALTER TABLE valuations ADD COLUMN v_koef_dalsi_pct REAL",
+                "ALTER TABLE valuations ADD COLUMN v_vek_pouzity REAL"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -45,7 +56,11 @@ CREATE TABLE IF NOT EXISTS valuations (
     koef_celkem REAL, vysledna_cena_m2 REAL, cena_za_byt REAL, priplatky_czk REAL,
     trzni_hodnota REAL, rozdil_pct REAL, sleva_pct REAL, najem_rocni REAL,
     prosty_vynos_pct REAL, celkovy_vynos_pct REAL, splatka_mesicni REAL,
-    najem_mesicni REAL, pokryti_splatky_pct REAL, computed_at TEXT
+    najem_mesicni REAL, pokryti_splatky_pct REAL,
+    v_cena_mapy_m2 REAL, v_faktor_velikosti REAL, v_zakladni_cena_m2 REAL,
+    v_zakladni_rucne INTEGER, v_koef_lokalita_pct REAL, v_koef_stav_pct REAL,
+    v_koef_vek_pct REAL, v_koef_balkon_pct REAL, v_koef_dalsi_pct REAL,
+    v_vek_pouzity REAL, computed_at TEXT
 );
 """
 

@@ -17,7 +17,11 @@ def dump_data() -> dict:
         """SELECT l.*, v.koef_celkem, v.vysledna_cena_m2, v.cena_za_byt, v.priplatky_czk,
                   v.trzni_hodnota, v.rozdil_pct, v.sleva_pct, v.najem_rocni,
                   v.prosty_vynos_pct, v.celkovy_vynos_pct, v.splatka_mesicni,
-                  v.najem_mesicni, v.pokryti_splatky_pct
+                  v.najem_mesicni, v.pokryti_splatky_pct,
+                  v.v_cena_mapy_m2, v.v_faktor_velikosti, v.v_zakladni_cena_m2,
+                  v.v_zakladni_rucne, v.v_koef_lokalita_pct, v.v_koef_stav_pct,
+                  v.v_koef_vek_pct, v.v_koef_balkon_pct, v.v_koef_dalsi_pct,
+                  v.v_vek_pouzity
            FROM listings l LEFT JOIN valuations v ON v.listing_id = l.id
            WHERE l.active = 1""")]
     price_map = [dict(r) for r in con.execute("SELECT * FROM price_map")]
