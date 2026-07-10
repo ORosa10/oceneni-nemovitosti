@@ -292,3 +292,9 @@ denním během.
   `scripts/sreality_cenova_mapa.py` + `.github/workflows/cenova_mapa.yml`
   (viz bod 5e). Skutečnou URL hierarchii poskytl sám uživatel (odhadování
   URL v Actions selhávalo na 404).
+- 2026-07-10: detail nabídky v appce byl „moc skoupý" — doplněna karta
+  „Postup výpočtu tržní hodnoty" ukazující celý řetězec (cena z mapy →
+  faktor velikosti → základní cena/m² → koeficienty lokalita/stav/věk/
+  balkon/další → výsledná cena/m² → cena za byt → příplatky → tržní
+  hodnota). Samotný výpočet v `valuation.py` se nezměnil, jen se nově
+  ukládají a zobrazují mezivýsledky (nové `v_*` sloupce v `valuations`).
