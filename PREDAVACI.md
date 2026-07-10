@@ -160,6 +160,42 @@ klikne „Submit new issue"; workflow úpravu zapíše, přepočítá, publikuje
 a issue zavře. Bezpečnost: přijímají se jen issues od vlastníka repa.
 Prázdné pole = vrátit na automatiku (NULL).
 
+### e) Měsíční aktualizace cenové mapy (cenova_mapa.yml — schváleno 2026-07-10)
+Uživatel potvrdil, že `data/price_map.csv` původně vzniklo ze Sreality
+Atlasu cen prodaných bytů (`sreality.cz/cenova-mapa`) a odsouhlasil, že se
+bude 1× měsíčně automaticky obnovovat ze stejného zdroje.
+
+**Jak se zdroj podařilo najít**: stránka je Next.js appka bez viditelných
+API volání ani hrefů v HTML (klasické guessování URL typu
+`/cenova-mapa/hlavni-mesto-praha` skončilo 404 — vyzkoušeno přes diagnostiku
+v Actions). Uživatel poslal skutečné URL, na které se díval v prohlížeči,
+např.:
+`sreality.cz/cenova-mapa/hledani/byty/hlavni-mesto-praha-10/hlavni-mesto-praha-47/praha-3468/josefov-8722`
+Z toho vyplynula hierarchie region→okres→obec→městská část
+(`{typ}-{entityId}` segmenty). Klíčové zjištění: stačí zavolat URL na úrovni
+**regionu** —
+`https://www.sreality.cz/cenova-mapa/hledani/byty/hlavni-mesto-praha-10` —
+a stránka rovnou vrátí VŠECH ~100 pražských městských částí najednou (v
+`<script id="__NEXT_DATA__">` → `pageProps.aggregatedLocalities`, položky s
+`entityType:"ward"`), každou s `avgPricePerSqm` a `numTransactions` za
+posledních 12 měsíců. Není potřeba procházet 100 jednotlivých URL.
+
+**Implementace**: `scripts/sreality_cenova_mapa.py` stáhne tuto jednu URL,
+vytáhne `aggregatedLocalities`, přepíše `data/price_map.csv` (sloupce klic,
+ctvrt, cena_za_m2_czk, pocet_transakci) — sloupec `najem_m2_mesic` (ručně
+dopočtený, dnes jen Radlice+Dejvice) se VŽDY přenáší beze změny ze
+stávajícího CSV, skript ho nikdy nepřepisuje. Pojistka: pokud by Sreality
+vrátila méně než 50 čtvrtí (změna struktury stránky), skript skončí chybou
+a NIC nepřepíše (žádná tichá náhrada).
+
+Workflow `cenova_mapa.yml`: cron 1. den v měsíci 5:00 UTC + `workflow_dispatch`
+pro ruční ověření. Kroky: `init` (pojistka) → `sreality_cenova_mapa.py` →
+`cenova-mapa` (nahrání CSV do DB) → `ocenit` (přepočet s novou mapou) →
+`build-static` → commit `data/price_map.csv` + DB + `docs/`.
+
+Diagnostické soubory z hledání zdroje (`scripts/_diag_cenova_mapa.py`,
+`docs/diag_cenmapa_*.{txt,json}`) byly po dokončení smazány z repa.
+
 ## 6. PRIORITY HODNOT A OCHRANA RUČNÍCH VSTUPŮ (klíčové!)
 
 Ruční hodnota u nabídky > automatika (detail Sreality / MFČR / POI matice).
@@ -218,17 +254,11 @@ denním během.
   token ulož do /tmp, remote `https://x-access-token:TOKEN@github.com/...`.
   Token z minulé session NEPŘEŽIL — bude potřeba nový device flow.
 - **Na připojené složce nefunguje SQLite zápis ani git** (mount omezení)
-  a velké zápisy nástrojem Write se někdy synchronizují ořezané — OVĚŘ TO
-  VŽDY po zápisu (přečti si soubor zpět, zkontroluj počet řádků/konec textu).
-  Bezpečnější je psát rovnou v sandboxu (`/tmp/push` klon nebo heredoc přes
-  bash) a teprve hotový, ověřený obsah kopírovat/zapisovat do připojené
-  složky — ne naopak (kopírovat Z připojené složky DO sandboxu je náchylné
-  na zpoždění synchronizace mountu a může vrátit starý obsah).
+  a velké zápisy nástrojem Write se někdy synchronizují ořezané. Pracuj
+  v klonu v /tmp (např. /tmp/push), commituj do repa, a změněné soubory
+  VŽDY zkopíruj i zpět do připojené složky (cp přes shell je spolehlivý).
 - **Workflow konvence:** před prací vždy `git fetch && reset --hard origin/main
   && clean -fd` (v /tmp klonu se hromadí smetí a pushe pak padají).
-- **GitHub je zdroj pravdy pro produkci** — Actions běží z GitHubu, ne
-  z připojené složky. Při pochybnosti o aktuálním stavu kódu/dat vždy
-  ověřit `raw.githubusercontent.com/ORosa10/oceneni-nemovitosti/main/<soubor>`.
 - Mazání souborů v připojené složce vyžaduje povolení (allow_cowork_file_delete).
 - Sreality API je neoficiální — když se rozbije, diagnostika přes Actions
   (viz výše). Struktura odpovědí zdokumentovaná v kódu.
@@ -256,3 +286,9 @@ denním během.
   nechal snížit `import-detaily` zpět na 500/den kvůli riziku IP banu ze
   Sreality (dočasné zvýšení na 4000/den bylo jen pro rychlé dotažení
   počátečního dluhu, ne trvalé nastavení).
+- 2026-07-10: uživatel potvrdil zdroj `data/price_map.csv` (Sreality Atlas
+  cen prodaných bytů, `sreality.cz/cenova-mapa`) a schválil 1× měsíční
+  automatickou aktualizaci ze stejného zdroje. Implementováno jako
+  `scripts/sreality_cenova_mapa.py` + `.github/workflows/cenova_mapa.yml`
+  (viz bod 5e). Skutečnou URL hierarchii poskytl sám uživatel (odhadování
+  URL v Actions selhávalo na 404).

@@ -1,7 +1,0 @@
-status=200 len=179310
-pocet unikatnich hrefu /cenova-mapa*: 0
---- /api/ retezce (0) ---
---- priceMap retezce (3) ---
-PriceMap
-priceMap
-pricemap

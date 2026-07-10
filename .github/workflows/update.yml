@@ -44,10 +44,6 @@ jobs:
 
 
 
-      - name: DIAGNOSTIKA cenova-mapa struktura Praha (docasne)
-        run: python3 scripts/_diag_cenova_mapa.py
-        continue-on-error: true
-
       - name: Přepočet ocenění
         run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
 

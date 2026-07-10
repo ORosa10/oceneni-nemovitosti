@@ -1,0 +1,51 @@
+name: Měsíční aktualizace cenové mapy
+
+on:
+  schedule:
+    - cron: "0 5 1 * *"   # 1. den v měsíci, 5:00 UTC
+  workflow_dispatch:        # + ruční spuštění tlačítkem (pro ověření)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aktualizace-dat
+  cancel-in-progress: false
+
+jobs:
+  cenova-mapa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalace závislostí
+        run: pip install -r requirements.txt
+
+      - name: Databáze (init, kdyby chyběla)
+        run: python -m src.main init
+
+      - name: Stažení cenové mapy ze Sreality
+        run: python scripts/sreality_cenova_mapa.py
+
+      - name: Nahrání cenové mapy do DB
+        run: python -m src.main cenova-mapa
+
+      - name: Přepočet ocenění s novou cenovou mapou
+        run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
+
+      - name: Statická appka do docs/
+        run: python -m src.main build-static 2>&1 | tee docs/build_log.txt
+
+      - name: Commit dat
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/price_map.csv data/nemovitosti.db docs/
+          git diff --cached --quiet || git commit -m "Měsíční aktualizace cenové mapy ze Sreality ($(date +%F))"
+          git pull --rebase origin main || true
+          git push
