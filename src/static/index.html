@@ -42,6 +42,14 @@ tr.l:hover{background:#1c2438;cursor:pointer}
 .calc .kv.step b{color:var(--mut);font-weight:600}
 .calc .kv.sum{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px;font-weight:600}
 .calc .kv.sum.total{border-top:1px solid var(--acc);color:var(--tx);font-size:14px}
+.ico{cursor:pointer;font-size:15px;padding:2px 5px;border-radius:5px;opacity:.55}
+.ico:hover{opacity:1;background:#232c42}
+.ico.on{opacity:1}
+.ico-cell{white-space:nowrap}
+tr.skryta{opacity:.45}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-row button{flex:1;margin-top:0}
+.btn-off{background:#232c42;color:var(--tx)}
 a{color:var(--acc)}
 .empty{color:var(--mut);padding:40px;text-align:center}
 @media(max-width:800px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
@@ -70,6 +78,11 @@ a{color:var(--acc)}
   <h2>Bez ceny</h2>
   <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center">
     <input id="f-bezceny" type="checkbox" style="width:auto">zobrazit „cena na vyžádání"</label>
+  <h2>Watchlist &amp; skryté</h2>
+  <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-bottom:4px">
+    <input id="f-jen-watchlist" type="checkbox" style="width:auto">jen ★ watchlist</label>
+  <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center">
+    <input id="f-zobraz-skryte" type="checkbox" style="width:auto">zobrazit skryté</label>
   <button class="btn-p" onclick="render()">Filtrovat</button>
   <button class="btn-s" onclick="reset()">Zrušit filtry</button>
 </aside>
@@ -80,7 +93,7 @@ a{color:var(--acc)}
       <th onclick="srt('sleva_pct')">Sleva ▾</th><th>Nabídka</th><th>Čtvrť</th><th>Disp.</th>
       <th onclick="srt('plocha_m2')">m²</th><th onclick="srt('cena_czk')">Cena</th>
       <th onclick="srt('cena_m2')">Kč/m²</th><th onclick="srt('trzni_hodnota')">Tržní hodnota</th>
-      <th onclick="srt('prosty_vynos_pct')">Výnos</th>
+      <th onclick="srt('prosty_vynos_pct')">Výnos</th><th></th>
     </tr></thead>
     <tbody id="tb"></tbody>
   </table>
@@ -91,7 +104,19 @@ let ALL=[], MAPA={}, view=[], sortKey='sleva_pct', sortAsc=false;
 const fmt=n=>n==null?'–':Math.round(n).toLocaleString('cs-CZ');
 const pct=n=>n==null?'–':n.toLocaleString('cs-CZ',{maximumFractionDigits:1})+' %';
 const pctS=n=>n==null?'–':(n>0?'+':'')+n.toLocaleString('cs-CZ',{maximumFractionDigits:2})+' %';
-const mult=n=>n==null?'–':'× '+n.toLocaleString('cs-CZ',{maximumFractionDigits:4});
+const mult=n=>n==null?'–':'× '+n.toLocaleString('cs-CZ',{maximumFractionDigits:4});
+
+const REPO='ORosa10/oceneni-nemovitosti';
+function otevriIssue(id,zmeny){
+  const title='uprava:'+id;
+  const body='```json\n'+JSON.stringify(zmeny,null,2)+'\n```';
+  const url='https://github.com/'+REPO+'/issues/new?title='+encodeURIComponent(title)+'&body='+encodeURIComponent(body);
+  window.open(url,'_blank');
+}
+function prepni(ev,id,pole,hodnota){
+  if(ev)ev.stopPropagation();
+  otevriIssue(id,{[pole]:hodnota});
+}
 
 async function boot(){
   const d=await (await fetch('data.json')).json();
@@ -113,8 +138,11 @@ function render(){
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         msl=num('f-sleva'), mvy=num('f-vynos');
   const bez=document.getElementById('f-bezceny').checked;
+  const jenWatch=document.getElementById('f-jen-watchlist').checked;
+  const zobrSkryte=document.getElementById('f-zobraz-skryte').checked;
   view=ALL.filter(r=>
     (bez||r.cena_czk!=null) &&
+    (zobrSkryte||!r.skryto) && (!jenWatch||r.watchlist) &&
     (!ct.length||ct.includes(r.ctvrt)) && (!dp.length||dp.includes(r.dispozice)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
@@ -130,14 +158,18 @@ function render(){
   // stále z celého view, takže čísla zůstávají správná.
   const CAP=400;
   const zobrazene=view.slice(0,CAP);
-  if(!view.length){tb.innerHTML='<tr><td colspan="9" class="empty">Žádné nabídky — počkej na první běh importu, nebo uvolni filtry.</td></tr>';}
+  if(!view.length){tb.innerHTML='<tr><td colspan="10" class="empty">Žádné nabídky — počkej na první běh importu, nebo uvolni filtry.</td></tr>';}
   else tb.innerHTML=zobrazene.map((r,i)=>{
     const cls=r.sleva_pct>=15?'sleva-ok':r.sleva_pct>=5?'sleva-mid':'sleva-bad';
-    return `<tr class="l" onclick="detail(${i},this)">
+    return `<tr class="l${r.skryto?' skryta':''}" onclick="detail(${i},this)">
       <td class="${cls}">${pct(r.sleva_pct)}</td>
       <td>${r.nazev||''}</td><td>${r.ctvrt||''}</td><td>${r.dispozice||''}</td>
       <td>${r.plocha_m2||''}</td><td>${r.cena_czk==null?'na vyžádání':fmt(r.cena_czk)}</td><td>${fmt(r.cena_m2)}</td>
-      <td>${fmt(r.trzni_hodnota)}</td><td>${pct(r.prosty_vynos_pct)}</td></tr>`;
+      <td>${fmt(r.trzni_hodnota)}</td><td>${pct(r.prosty_vynos_pct)}</td>
+      <td class="ico-cell">
+        <span class="ico${r.watchlist?' on':''}" title="Watchlist" onclick="prepni(event,${r.id},'watchlist',${r.watchlist?0:1})">${r.watchlist?'★':'☆'}</span>
+        <span class="ico${r.skryto?' on':''}" title="Skrýt/zobrazit" onclick="prepni(event,${r.id},'skryto',${r.skryto?0:1})">${r.skryto?'🚫':'👁'}</span>
+      </td></tr>`;
   }).join('');
   const se=view.filter(r=>r.sleva_pct!=null);
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
@@ -157,7 +189,7 @@ function detail(i,tr){
   const pm=MAPA[r.ctvrt];
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
   const row=document.createElement('tr'); row.className='detail'; row.dataset.i=i;
-  row.innerHTML=`<td colspan="9"><div class="grid">
+  row.innerHTML=`<td colspan="10"><div class="grid">
     <div class="card calc"><h3>Postup výpočtu tržní hodnoty</h3>
       ${r.v_zakladni_rucne?`
       <div class="kv"><span>Základní cena/m² (ručně zadáno)</span><b>${fmt(r.v_zakladni_cena_m2)} Kč</b></div>`:`
@@ -182,6 +214,14 @@ function detail(i,tr){
       <div class="kv"><span>Rozpětí Kč/m²</span><b>${cm2.length?fmt(Math.min(...cm2))+'–'+fmt(Math.max(...cm2)):'–'}</b></div>
       <div class="kv"><span>Cenová mapa Kč/m²</span><b>${pm?fmt(pm.cena_za_m2_czk):'–'}</b></div>
       <div class="kv"><span>Transakcí v mapě</span><b>${pm?pm.pocet_transakci:'–'}</b></div></div>
+    <div class="card"><h3>Watchlist &amp; skrytí</h3>
+      <div class="kv"><span>Watchlist</span><b>${r.watchlist?'ano':'ne'}</b></div>
+      <div class="kv"><span>Skryto z hlavního výpisu</span><b>${r.skryto?'ano':'ne'}</b></div>
+      <div class="btn-row">
+        <button class="btn-s" onclick="prepni(event,${r.id},'watchlist',${r.watchlist?0:1})">${r.watchlist?'★ odebrat z watchlistu':'☆ přidat na watchlist'}</button>
+        <button class="btn-s" onclick="prepni(event,${r.id},'skryto',${r.skryto?0:1})">${r.skryto?'👁 zobrazit zpět':'🚫 skrýt'}</button>
+      </div>
+      <div style="font-size:11px;color:var(--mut);margin-top:6px">I tohle jde přes GitHub Issue (Submit new issue → zapíše se do ~2 minut).</div></div>
     <div class="card"><h3>Nájem &amp; výnos</h3>
       <div class="kv"><span>Roční nájem (10/12)</span><b>${fmt(r.najem_rocni)} Kč</b></div>
       <div class="kv"><span>Prostý výnos</span><b>${pct(r.prosty_vynos_pct)}</b></div>
@@ -222,6 +262,28 @@ function detail(i,tr){
       Robot ji do ~2 minut zapíše a přepočítá. Prázdné pole = automatická hodnota.</div></div>
   </div></td>`;
   tr.after(row);
+  // Předvyplnit selecty aktuální hodnotou nabídky (jinak by "Uložit" bez
+  // úprav poslal prázdno = smazal by existující ruční vstupy).
+  ['e-stav','e-balkon','e-park','e-lok'].forEach(id=>{
+    const pole={'e-stav':'stav','e-balkon':'balkon','e-park':'parkovani','e-lok':'lokalita'}[id];
+    const el=row.querySelector('#'+id);
+    if(el&&r[pole])el.value=r[pole];
+  });
+}
+// Sesbírá hodnoty z formuláře "Upravit vstupy" a otevře GitHub Issue.
+// Prázdné pole = vrátit na automatiku (viz scripts/aplikuj_upravu.py).
+function ulozUpravu(id){
+  const zmeny={
+    stav: document.getElementById('e-stav').value,
+    rok_vystavby: document.getElementById('e-rok').value,
+    balkon: document.getElementById('e-balkon').value,
+    parkovani: document.getElementById('e-park').value,
+    lokalita: document.getElementById('e-lok').value,
+    dalsi_koef_pct: document.getElementById('e-koef').value,
+    najem_m2_mesic: document.getElementById('e-najem').value,
+    zakladni_cena_m2: document.getElementById('e-zakl').value,
+  };
+  otevriIssue(id,zmeny);
 }
 boot();
 </script>

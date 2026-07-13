@@ -31,7 +31,13 @@ def migruj(con):
                 "ALTER TABLE valuations ADD COLUMN v_koef_vek_pct REAL",
                 "ALTER TABLE valuations ADD COLUMN v_koef_balkon_pct REAL",
                 "ALTER TABLE valuations ADD COLUMN v_koef_dalsi_pct REAL",
-                "ALTER TABLE valuations ADD COLUMN v_vek_pouzity REAL"):
+                "ALTER TABLE valuations ADD COLUMN v_vek_pouzity REAL",
+                # Watchlist (hvězdička) a skrytí nabídky z appky (2026-07-13,
+                # na žádost uživatele) — čistě ruční stav, import ho NIKDY
+                # nepřepíše (není v LISTING_SLOUPCE), mění se jen přes
+                # scripts/aplikuj_upravu.py (GitHub Issue).
+                "ALTER TABLE listings ADD COLUMN watchlist INTEGER DEFAULT 0",
+                "ALTER TABLE listings ADD COLUMN skryto INTEGER DEFAULT 0"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -45,6 +51,7 @@ CREATE TABLE IF NOT EXISTS listings (
     balkon TEXT DEFAULT 'Ne', parkovani TEXT DEFAULT 'Ne', dalsi_koef_pct REAL DEFAULT 0,
     najem_m2_mesic REAL, najem_priplatky_rocni REAL DEFAULT 0,
     active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT,
+    watchlist INTEGER DEFAULT 0, skryto INTEGER DEFAULT 0,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (

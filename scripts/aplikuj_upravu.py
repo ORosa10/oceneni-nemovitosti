@@ -6,9 +6,13 @@ import sqlite3
 import sys
 
 POVOLENA = {"stav", "rok_vystavby", "balkon", "parkovani", "dalsi_koef_pct",
-            "lokalita", "najem_m2_mesic", "najem_priplatky_rocni", "zakladni_cena_m2"}
+            "lokalita", "najem_m2_mesic", "najem_priplatky_rocni", "zakladni_cena_m2",
+            "watchlist", "skryto"}
 CISELNA = {"rok_vystavby", "dalsi_koef_pct", "najem_m2_mesic",
            "najem_priplatky_rocni", "zakladni_cena_m2"}
+# watchlist/skryto jsou čisté přepínače (0/1) — na rozdíl od ostatních polí
+# prázdná hodnota neznamená "vrátit na automatiku", ale rovnou 0 (vypnuto).
+BOOLEANOVA = {"watchlist", "skryto"}
 
 event = json.load(open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8"))
 issue = event["issue"]
@@ -26,7 +30,9 @@ zmeny = {}
 for k, v in data.items():
     if k not in POVOLENA:
         print(f"pole {k} není povolené, přeskakuji"); continue
-    if v in ("", None):
+    if k in BOOLEANOVA:
+        zmeny[k] = 1 if str(v).strip().lower() in ("1", "true", "ano") else 0
+    elif v in ("", None):
         zmeny[k] = None                       # prázdné = vrátit na automatiku
     elif k in CISELNA:
         zmeny[k] = float(v)
