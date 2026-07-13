@@ -160,6 +160,22 @@ klikne „Submit new issue"; workflow úpravu zapíše, přepočítá, publikuje
 a issue zavře. Bezpečnost: přijímají se jen issues od vlastníka repa.
 Prázdné pole = vrátit na automatiku (NULL).
 
+**Watchlist a skrytí (2026-07-13)**: stejným GitHub Issue mechanismem teď
+jde i jedním kliknutím označit nabídku hvězdičkou (`watchlist`) nebo ji
+skrýt z hlavního výpisu (`skryto`) — ikonky přímo v řádku tabulky i
+tlačítka v detailu. Na rozdíl od ostatních polí je u těchto dvou prázdná
+hodnota rovnou 0 (ne „vrátit na automatiku“ — automatika u nich neexistuje).
+Sloupce `listings.watchlist`/`listings.skryto` NEJSOU v `LISTING_SLOUPCE`,
+takže je denní import nikdy nepřepíše.
+
+**Oprava (2026-07-13)**: při té příležitosti se zjistilo, že funkce
+`ulozUpravu()` byla v `index.html` volaná (`onclick`), ale nikde
+definovaná — tlačítko „💾 Uložit“ u ruční úpravy tak reálně nefungovalo
+(JS chyba, tichá, appka nespadla). Opraveno — `ulozUpravu()` i sdílené
+`otevriIssue()`/`prepni()` teď existují a jsou pokryté smoke testem
+(jsdom). Zároveň doplněno předvyplnění selectů aktuální hodnotou nabídky,
+aby „Uložit“ bez úprav nesmazalo existující ruční vstupy.
+
 ### e) Měsíční aktualizace cenové mapy (cenova_mapa.yml — schváleno 2026-07-10)
 Uživatel potvrdil, že `data/price_map.csv` původně vzniklo ze Sreality
 Atlasu cen prodaných bytů (`sreality.cz/cenova-mapa`) a odsouhlasil, že se
@@ -298,3 +314,18 @@ denním během.
   balkon/další → výsledná cena/m² → cena za byt → příplatky → tržní
   hodnota). Samotný výpočet v `valuation.py` se nezměnil, jen se nově
   ukládají a zobrazují mezivýsledky (nové `v_*` sloupce v `valuations`).
+- 2026-07-13: starý naplánovaný Coworkový úkol „tydenni-report-prilezitosti"
+  (lokální import, dnes nefunkční — sandbox nemá přístup na Sreality)
+  přepsán na čtení hotových dat z `docs/data.json` na GitHubu a zaslání
+  souhrnu top 10 nových příležitostí za týden přímo do chatu (bez e-mailu —
+  dostupný Gmail konektor umí jen draft, ne odeslání; uživatel zvolil chat).
+- 2026-07-13: přidán watchlist (hvězdička) a skrytí nabídky (bod 5d), a
+  cestou opravena reálně nefunkční funkce `ulozUpravu()` v appce (viz 5d).
+  Zároveň opakovaně narazeno na známý bug „mount sync/truncation" (bod 9)
+  — tentokrát postihl `src/db.py` i `scripts/aplikuj_upravu.py` po Edit
+  nástroji; `python -m py_compile` to NEODHALÍ (useknutý soubor může
+  skončit na syntakticky platném místě, např. osamocený identifikátor —
+  jen se nic nestane za běhu). Napříště: po každé netriviální Edit dávce
+  na klíčové soubory ověřit přes bash byte-přesně (`tail -c`, porovnat
+  poslední řádek s očekávaným koncem funkce), ne jen že `py_compile`
+  neshodí chybu.
