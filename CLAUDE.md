@@ -18,6 +18,8 @@ data/
   nemovitosti.db     – SQLite databáze (negeneruje se do gitu)
   price_map.csv      – cenová mapa: ~100 pražských čtvrtí, aktualizuje se
                        automaticky 1× měsíčně ze Sreality (viz níže)
+  sazba_hypoteky.csv – průměrná sazba hypoték, automaticky 1× měsíčně
+                       z ČBA Hypomonitoru (viz níže)
   imports/           – sem se ukládají ruční CSV/XLSX k importu
 examples/
   vzorove_nabidky.csv – ukázkový import
@@ -33,9 +35,11 @@ src/
 scripts/
   mfcr_najemne.py           – stažení nájemního benchmarku z MFČR
   sreality_cenova_mapa.py   – měsíční aktualizace data/price_map.csv ze Sreality
+  cba_hypomonitor.py        – měsíční aktualizace data/sazba_hypoteky.csv z ČBA
 .github/workflows/
   update.yml           – denní import + ocenění + build (4:00 UTC)
-  cenova_mapa.yml       – měsíční refresh cenové mapy (1. den v měsíci, 5:00 UTC)
+  cenova_mapa.yml       – měsíční refresh cenové mapy + sazby hypotéky
+                          (1. den v měsíci, 5:00 UTC)
 ```
 
 ## Hard rules
@@ -58,6 +62,7 @@ python -m src.main prilezitosti --export out.xlsx
 python -m src.main cenova-mapa                   # znovu nahraje data/price_map.csv do DB
 python -m src.main app                           # spustí webovou aplikaci (localhost:8000)
 python scripts/sreality_cenova_mapa.py           # ruční refresh price_map.csv ze Sreality
+python scripts/cba_hypomonitor.py                # ruční refresh sazba_hypoteky.csv z ČBA
 ```
 
 ## Oceňovací model — CORNERSTONE
@@ -74,5 +79,8 @@ bytů, 12měsíční klouzavý průměr; automaticky aktualizováno 1× měsíč
 schváleno uživatelem 2026-07-10) × faktor velikosti bytu (40/57/75 m²).
 Sleva = −(cena/tržní − 1). Příležitost = sleva ≥ práh (výchozí 10 %).
 Navíc: nájemní výnos (obsazenost 10/12, růst 5 %, amortizace 0,3), IRR 20 let,
-hypotéka (LTV 80 %, sazba 4,2 %, 30 let, pokrytí splátky nájmem).
+hypotéka (LTV 80 %, sazba dle `data/sazba_hypoteky.csv` — automaticky
+aktualizováno 1× měsíčně z ČBA Hypomonitoru, záložní hodnota 4,2 % když
+soubor chybí/je neplatný, schváleno uživatelem 2026-07-14; 30 let, pokrytí
+splátky nájmem).
 Všechny konstanty: `src/valuation.py` (s odkazy na buňky původního sheetu).

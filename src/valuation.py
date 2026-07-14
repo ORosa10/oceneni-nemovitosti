@@ -45,8 +45,29 @@ AMORTIZACE = 0.3         # AH = 0.3 × tržní × (1+AF)^10
 
 # Hypotéka (sloupce AN–AS)
 LTV = 0.8                # AO
-SAZBA = 0.042            # AP
+SAZBA_ZALOZNI = 0.042    # AP — záložní hodnota, kdyby chybělo/bylo neplatné data/sazba_hypoteky.csv
 SPLATNOST_MESICU = 360
+
+# Průměrná sazba hypoték — automaticky 1× měsíčně z ČBA Hypomonitoru
+# (cbamonitor.cz), schváleno uživatelem 2026-07-14 (viz scripts/cba_hypomonitor.py
+# a PREDAVACI.md sekce 10). Bez souboru/při neplatné hodnotě se použije SAZBA_ZALOZNI.
+SAZBA_HYPOTEKY_CSV = db.ROOT / "data" / "sazba_hypoteky.csv"
+
+
+def nacti_sazbu_hypoteky():
+    if SAZBA_HYPOTEKY_CSV.exists():
+        try:
+            with open(SAZBA_HYPOTEKY_CSV, encoding="utf-8-sig") as f:
+                radek = next(csv.DictReader(f))
+                sazba = float(radek["sazba_pct"]) / 100
+                if 0.005 <= sazba <= 0.20:
+                    return sazba
+        except Exception:
+            pass
+    return SAZBA_ZALOZNI
+
+
+SAZBA = nacti_sazbu_hypoteky()
 
 # List „Cenová mapa", sloupce G–I: úprava základní ceny o velikost bytu
 # (lineární křivka faktorů vůči průměru: 40 m2 malý, 57 střední, 75 velký)

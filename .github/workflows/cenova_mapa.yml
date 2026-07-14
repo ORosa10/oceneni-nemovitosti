@@ -1,4 +1,4 @@
-name: Měsíční aktualizace cenové mapy
+name: Měsíční aktualizace cenové mapy a sazby hypotéky
 
 on:
   schedule:
@@ -37,9 +37,8 @@ jobs:
       - name: Nahrání cenové mapy do DB
         run: python -m src.main cenova-mapa
 
-      - name: DIAGNOSTIKA hypomonitor struktura (docasne)
-        run: python3 scripts/_diag_hypomonitor.py
-        continue-on-error: true
+      - name: Stažení sazby hypotéky (ČBA Hypomonitor)
+        run: python scripts/cba_hypomonitor.py
 
       - name: Přepočet ocenění s novou cenovou mapou
         run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
@@ -52,7 +51,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/price_map.csv data/nemovitosti.db docs/
-          git diff --cached --quiet || git commit -m "Měsíční aktualizace cenové mapy ze Sreality ($(date +%F))"
+          git add data/price_map.csv data/sazba_hypoteky.csv data/nemovitosti.db docs/
+          git diff --cached --quiet || git commit -m "Měsíční aktualizace cenové mapy a sazby hypotéky ($(date +%F))"
           git pull --rebase origin main || true
           git push
