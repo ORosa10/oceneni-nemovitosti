@@ -34,6 +34,10 @@ jobs:
       - name: Nahrání cenové mapy do DB
         run: python -m src.main cenova-mapa
 
+      - name: DIAGNOSTIKA hypomonitor struktura (docasne)
+        run: python3 scripts/_diag_hypomonitor.py
+        continue-on-error: true
+
       - name: Přepočet ocenění s novou cenovou mapou
         run: python -m src.main ocenit 2>&1 | tee docs/ocenit_log.txt
 
