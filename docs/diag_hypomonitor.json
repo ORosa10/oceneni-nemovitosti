@@ -1,0 +1,33 @@
+{
+  "status": 200,
+  "len": 139007,
+  "najdeno": {
+    "Aktuální hodnota": [
+      105071
+    ],
+    "aktualni-hodnota": [],
+    "Hodnota minulého měsíce": [
+      105884
+    ],
+    "class=\"h1": [],
+    "prumerna-urokova": [
+      72946
+    ],
+    "csv": [
+      111340
+    ],
+    "CSV": [
+      111288,
+      111356,
+      111476
+    ],
+    "data-value": [],
+    "highcharts": [],
+    "Chart(": [],
+    "series": [
+      23680,
+      23836,
+      23861
+    ]
+  }
+}
