@@ -38,10 +38,15 @@ tr.l:hover{background:#1c2438;cursor:pointer}
 .card h3{font-size:11px;color:var(--mut);text-transform:uppercase;margin-bottom:6px}
 .kv{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;gap:10px}
 .kv span:first-child{color:var(--mut)}
+.kv b{font-weight:500;color:var(--tx)}
+.kv.hi{margin-top:4px;padding-top:6px;border-top:1px solid var(--line)}
+.kv.hi b{font-weight:700;color:var(--acc);font-size:15px}
 .calc .kv.step{padding-left:14px;font-size:12px;color:var(--mut);border-left:2px solid var(--line);margin-left:2px}
-.calc .kv.step b{color:var(--mut);font-weight:600}
-.calc .kv.sum{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px;font-weight:600}
-.calc .kv.sum.total{border-top:1px solid var(--acc);color:var(--tx);font-size:14px}
+.calc .kv.step b{color:var(--mut);font-weight:500}
+.calc .kv.sum{border-top:1px dashed var(--line);margin-top:2px;padding-top:5px}
+.calc .kv.sum b{font-weight:500}
+.calc .kv.sum.total{border-top:1px solid var(--acc);margin-top:6px;padding-top:6px}
+.calc .kv.sum.total b{color:var(--acc);font-weight:700;font-size:15px}
 .ico{cursor:pointer;font-size:15px;padding:2px 5px;border-radius:5px;opacity:.55}
 .ico:hover{opacity:1;background:#232c42}
 .ico.on{opacity:1}
@@ -231,7 +236,7 @@ function detail(i,tr){
       <div class="kv step"><span>+ příplatek (parkování: ${r.parkovani||'Ne'})</span><b>+ ${fmt(r.priplatky_czk)} Kč</b></div>
       <div class="kv sum total"><span>= Tržní hodnota</span><b>${fmt(r.trzni_hodnota)} Kč</b></div>
       <div class="kv"><span>Inzerovaná cena</span><b>${r.cena_czk==null?'na vyžádání':fmt(r.cena_czk)+' Kč'}</b></div>
-      <div class="kv"><span>Rozdíl (sleva vs. tržní)</span><b>${pct(r.sleva_pct)}</b></div></div>
+      <div class="kv hi"><span>Rozdíl (sleva vs. tržní)</span><b>${pct(r.sleva_pct)}</b></div></div>
     <div class="card"><h3>Peer group — ${r.ctvrt||'–'}</h3>
       <div class="kv"><span>Nabídek ve čtvrti</span><b>${peers.length}</b></div>
       <div class="kv"><span>Ø Kč/m² nabídky</span><b>${fmt(avg(cm2))}</b></div>
@@ -249,11 +254,11 @@ function detail(i,tr){
     <div class="card"><h3>Nájem &amp; výnos</h3>
       <div class="kv"><span>Roční nájem (10/12)</span><b>${fmt(r.najem_rocni)} Kč</b></div>
       <div class="kv"><span>Prostý výnos</span><b>${pct(r.prosty_vynos_pct)}</b></div>
-      <div class="kv"><span>Celkový výnos 20 let (IRR)</span><b>${pct(r.celkovy_vynos_pct)}</b></div></div>
+      <div class="kv hi"><span>Celkový výnos 20 let (IRR)</span><b>${pct(r.celkovy_vynos_pct)}</b></div></div>
     <div class="card"><h3>Hypotéka (LTV 80 %, 4,2 %, 30 let)</h3>
       <div class="kv"><span>Měsíční splátka</span><b>${fmt(r.splatka_mesicni)} Kč</b></div>
       <div class="kv"><span>Měsíční nájem</span><b>${fmt(r.najem_mesicni)} Kč</b></div>
-      <div class="kv"><span>Pokrytí splátky nájmem</span><b>${pct(r.pokryti_splatky_pct)}</b></div></div>
+      <div class="kv hi"><span>Pokrytí splátky nájmem</span><b>${pct(r.pokryti_splatky_pct)}</b></div></div>
     <div class="card"><h3>Vstupy</h3>
       <div class="kv"><span>Stav</span><b>${r.stav||'–'}</b></div>
       <div class="kv"><span>Rok výstavby</span><b>${r.rok_vystavby||'–'}</b></div>
