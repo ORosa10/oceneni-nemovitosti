@@ -30,10 +30,6 @@ jobs:
       - name: Instalace závislostí
         run: pip install -r requirements.txt
 
-      - name: DIAGNOSTIKA poli vlastnictvi/popis (docasne, ukol #20)
-        run: python scripts/_diag_pole.py
-        continue-on-error: true
-
       - name: Databáze (init při prvním běhu)
         run: python -m src.main init
 

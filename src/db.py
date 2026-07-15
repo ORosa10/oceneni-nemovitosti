@@ -37,7 +37,14 @@ def migruj(con):
                 # nepřepíše (není v LISTING_SLOUPCE), mění se jen přes
                 # scripts/aplikuj_upravu.py (GitHub Issue).
                 "ALTER TABLE listings ADD COLUMN watchlist INTEGER DEFAULT 0",
-                "ALTER TABLE listings ADD COLUMN skryto INTEGER DEFAULT 0"):
+                "ALTER TABLE listings ADD COLUMN skryto INTEGER DEFAULT 0",
+                # Vlastnictví (Osobní/Družstevní/Státní-obecní) a stav anuity
+                # u družstevních bytů (2026-07-15, na žádost uživatele) —
+                # dotahuje se v import_detaily z pole `ownership` a textovým
+                # rozborem `advert_description` (pole `annuity` ze Sreality
+                # samo o sobě není spolehlivé, viz PREDAVACI.md).
+                "ALTER TABLE listings ADD COLUMN vlastnictvi TEXT",
+                "ALTER TABLE listings ADD COLUMN anuita_stav TEXT"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -52,6 +59,7 @@ CREATE TABLE IF NOT EXISTS listings (
     najem_m2_mesic REAL, najem_priplatky_rocni REAL DEFAULT 0,
     active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT,
     watchlist INTEGER DEFAULT 0, skryto INTEGER DEFAULT 0,
+    vlastnictvi TEXT, anuita_stav TEXT,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (

@@ -8,10 +8,45 @@
 #   balkon: balcony NEBO terrace NEBO loggia → "Ano"
 #   parkování: ≥2 stání/garáže → "Ano 2*"; garáž či stání → "Ano"; jinak "Ne"
 # Lokalita se zde NEnastavuje (samostatný budoucí krok).
+#
+# Vlastnictví a anuita (2026-07-15, na žádost uživatele; ověřeno diagnostikou
+# v Actions proti reálným datům, viz PREDAVACI.md bod 5g):
+#   vlastnictví: pole `ownership.name` ze Sreality ("Osobní"/"Družstevní"/
+#     "Státní/obecní") — stejné jako filtr na samotném Sreality.cz.
+#   anuita: pole `annuity` ze Sreality NENÍ spolehlivé (u ověřených vzorků
+#     vždy 0/null, i když text popisu jasně mluví o konkrétní nesplacené
+#     částce) — proto se stav anuity odvozuje z volného textu
+#     `advert_description`. Je to HEURISTIKA na klíčová slova, ne jistota:
+#       "nesplacen(á)"/"neuhrazen(á)"/"dluh...anuit"/"zbývá doplatit"/
+#         "zbývá splatit" u zmínky o anuitě → "nesplacena" (RED FLAG)
+#       "splacen(á)"/"uhrazen(á)"/"vypořádán(á)" u zmínky o anuitě
+#         (a NEobsahuje předchozí negaci) → "splacena"
+#       anuita zmíněná, ale žádný z výše uvedených vzorů nesedí → "neznamo"
+#       anuita v textu vůbec nezmíněná → None (nelze určit / nevztahuje se)
+import re
 import sqlite3
 import time
 
 import requests
+
+ANUITA_NESPLACENA_VZORY = (
+    r"nesplacen\w*", r"neuhrazen\w*", r"dluh\w*\s*(?:na|za)?\s*anuit\w*",
+    r"zbýv\w*\s+(?:doplatit|splatit)", r"k\s+doplacení",
+)
+ANUITA_SPLACENA_VZORY = (r"splacen\w*", r"uhrazen\w*", r"vypořádán\w*")
+
+
+def _anuita_stav(popis: str):
+    """Vrátí 'nesplacena' / 'splacena' / 'neznamo' / None (bez zmínky)."""
+    if not popis or "anuit" not in popis.lower():
+        return None
+    for vzor in ANUITA_NESPLACENA_VZORY:
+        if re.search(vzor, popis, re.I):
+            return "nesplacena"
+    for vzor in ANUITA_SPLACENA_VZORY:
+        if re.search(vzor, popis, re.I):
+            return "splacena"
+    return "neznamo"
 
 from . import db
 from .valuation import ROK_OCENENI
@@ -71,6 +106,11 @@ def _parkovani(d):
     return "Ne"
 
 
+def _vlastnictvi(d):
+    nazev = _nazev(d.get("ownership")).strip()
+    return nazev or None
+
+
 def import_detaily(limit: int = 500) -> int:
     con = db.connect()
     try:
@@ -88,8 +128,9 @@ def import_detaily(limit: int = 500) -> int:
             d = resp.json().get("result", {})
             con.execute(
                 "UPDATE listings SET stav=?, rok_vystavby=?, balkon=?, parkovani=?, "
-                "detail_at=datetime('now') WHERE id=?",
-                (_stav(d), _rok(d), _balkon(d), _parkovani(d), r["id"]))
+                "vlastnictvi=?, anuita_stav=?, detail_at=datetime('now') WHERE id=?",
+                (_stav(d), _rok(d), _balkon(d), _parkovani(d),
+                 _vlastnictvi(d), _anuita_stav(d.get("advert_description")), r["id"]))
             n += 1
         except Exception as e:
             chyby += 1
