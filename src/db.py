@@ -44,7 +44,22 @@ def migruj(con):
                 # rozborem `advert_description` (pole `annuity` ze Sreality
                 # samo o sobě není spolehlivé, viz PREDAVACI.md).
                 "ALTER TABLE listings ADD COLUMN vlastnictvi TEXT",
-                "ALTER TABLE listings ADD COLUMN anuita_stav TEXT"):
+                "ALTER TABLE listings ADD COLUMN anuita_stav TEXT",
+                # Doplňkové informační sloupce z detailu Sreality (2026-07-15,
+                # na žádost uživatele) — jen zobrazení/filtr v appce, NEVSTUPUJÍ
+                # do oceňovacího vzorce (ten je cornerstone, viz valuation.py).
+                "ALTER TABLE listings ADD COLUMN energeticky_stitek TEXT",
+                "ALTER TABLE listings ADD COLUMN patro INTEGER",
+                "ALTER TABLE listings ADD COLUMN pater_celkem INTEGER",
+                "ALTER TABLE listings ADD COLUMN vytah TEXT",
+                "ALTER TABLE listings ADD COLUMN sklep INTEGER",
+                "ALTER TABLE listings ADD COLUMN sklep_m2 REAL",
+                "ALTER TABLE listings ADD COLUMN zahrada_m2 REAL",
+                "ALTER TABLE listings ADD COLUMN typ_stavby TEXT",
+                # datum_vlozeni = skutečné datum zveřejnění na Sreality (pole
+                # `since`), na rozdíl od first_seen, což je jen okamžik, kdy si
+                # toho poprvé všiml náš vlastní import.
+                "ALTER TABLE listings ADD COLUMN datum_vlozeni TEXT"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -60,6 +75,8 @@ CREATE TABLE IF NOT EXISTS listings (
     active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT,
     watchlist INTEGER DEFAULT 0, skryto INTEGER DEFAULT 0,
     vlastnictvi TEXT, anuita_stav TEXT,
+    energeticky_stitek TEXT, patro INTEGER, pater_celkem INTEGER, vytah TEXT,
+    sklep INTEGER, sklep_m2 REAL, zahrada_m2 REAL, typ_stavby TEXT, datum_vlozeni TEXT,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (

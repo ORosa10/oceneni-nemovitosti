@@ -111,6 +111,60 @@ def _vlastnictvi(d):
     return nazev or None
 
 
+# Doplňkové informační pole (2026-07-15, na žádost uživatele) — čistě pro
+# zobrazení/filtr v appce, NEVSTUPUJÍ do oceňovacího vzorce (valuation.py
+# je cornerstone a mění se jen s výslovným souhlasem). Ověřeno diagnostikou
+# proti reálným datům ze Sreality, viz PREDAVACI.md.
+
+def _energeticky_stitek(d):
+    nazev = _nazev(d.get("energy_efficiency_rating_cb")).strip()
+    return nazev or None
+
+
+def _patro(d):
+    v = d.get("floor_number")
+    return int(v) if isinstance(v, (int, float)) else None
+
+
+def _pater_celkem(d):
+    v = d.get("floors")
+    return int(v) if isinstance(v, (int, float)) else None
+
+
+def _vytah(d):
+    nazev = _nazev(d.get("elevator")).strip()
+    if not nazev or nazev.lower().startswith("- nezad"):
+        return None
+    return nazev
+
+
+def _sklep(d):
+    return 1 if d.get("cellar") else 0
+
+
+def _sklep_m2(d):
+    v = d.get("cellar_area")
+    return float(v) if isinstance(v, (int, float)) else None
+
+
+def _zahrada_m2(d):
+    v = d.get("garden_area")
+    return float(v) if isinstance(v, (int, float)) else None
+
+
+def _typ_stavby(d):
+    nazev = _nazev(d.get("building_type")).strip()
+    return nazev or None
+
+
+def _datum_vlozeni(d):
+    """Skutečné datum zveřejnění inzerátu na Sreality (pole `since`),
+    přesnější než first_seen (což je jen okamžik prvního zachycení
+    naším importem — u zpětně dotahovaných nabídek může být pozdější)."""
+    v = d.get("since")
+    return str(v) if v else None
+
+
 def import_detaily(limit: int = 500) -> int:
     con = db.connect()
     try:
@@ -128,9 +182,14 @@ def import_detaily(limit: int = 500) -> int:
             d = resp.json().get("result", {})
             con.execute(
                 "UPDATE listings SET stav=?, rok_vystavby=?, balkon=?, parkovani=?, "
-                "vlastnictvi=?, anuita_stav=?, detail_at=datetime('now') WHERE id=?",
+                "vlastnictvi=?, anuita_stav=?, energeticky_stitek=?, patro=?, "
+                "pater_celkem=?, vytah=?, sklep=?, sklep_m2=?, zahrada_m2=?, "
+                "typ_stavby=?, datum_vlozeni=?, detail_at=datetime('now') WHERE id=?",
                 (_stav(d), _rok(d), _balkon(d), _parkovani(d),
-                 _vlastnictvi(d), _anuita_stav(d.get("advert_description")), r["id"]))
+                 _vlastnictvi(d), _anuita_stav(d.get("advert_description")),
+                 _energeticky_stitek(d), _patro(d), _pater_celkem(d), _vytah(d),
+                 _sklep(d), _sklep_m2(d), _zahrada_m2(d), _typ_stavby(d),
+                 _datum_vlozeni(d), r["id"]))
             n += 1
         except Exception as e:
             chyby += 1

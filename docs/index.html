@@ -69,6 +69,10 @@ a{color:var(--acc)}
   <select id="f-disp" multiple></select>
   <h2>Vlastnictví</h2>
   <select id="f-vlastnictvi" multiple></select>
+  <h2>Energetický štítek</h2>
+  <select id="f-stitek" multiple></select>
+  <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:6px">
+    <input id="f-jen-vytah" type="checkbox" style="width:auto">jen s výtahem</label>
   <h2>Cena (mil. Kč)</h2>
   <div class="row2"><input id="f-cmin" type="number" placeholder="od" step="0.5"><input id="f-cmax" type="number" placeholder="do" step="0.5"></div>
   <h2>Plocha (m²)</h2>
@@ -133,6 +137,8 @@ async function boot(){
   document.getElementById('f-disp').innerHTML=ds.map(d=>`<option>${d}</option>`).join('');
   const vl=[...new Set(ALL.map(r=>r.vlastnictvi).filter(Boolean))].sort();
   document.getElementById('f-vlastnictvi').innerHTML=vl.map(v=>`<option>${v}</option>`).join('');
+  const st=[...new Set(ALL.map(r=>r.energeticky_stitek).filter(Boolean))].sort();
+  document.getElementById('f-stitek').innerHTML=st.map(s=>`<option>${s}</option>`).join('');
   render();
 }
 const vals=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
@@ -141,19 +147,21 @@ function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cen
 function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
 
 function render(){
-  const ct=vals('f-ctvrt'), dp=vals('f-disp'), vl=vals('f-vlastnictvi');
+  const ct=vals('f-ctvrt'), dp=vals('f-disp'), vl=vals('f-vlastnictvi'), st=vals('f-stitek');
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         msl=num('f-sleva'), mslMax=num('f-sleva-max'), mvy=num('f-vynos');
   const bez=document.getElementById('f-bezceny').checked;
   const jenWatch=document.getElementById('f-jen-watchlist').checked;
   const zobrSkryte=document.getElementById('f-zobraz-skryte').checked;
   const jenAnuita=document.getElementById('f-jen-anuita').checked;
+  const jenVytah=document.getElementById('f-jen-vytah').checked;
   view=ALL.filter(r=>
     (bez||r.cena_czk!=null) &&
     (zobrSkryte||!r.skryto) && (!jenWatch||r.watchlist) &&
     (!jenAnuita||r.anuita_stav==='nesplacena') &&
+    (!jenVytah||r.vytah==='Ano') &&
     (!ct.length||ct.includes(r.ctvrt)) && (!dp.length||dp.includes(r.dispozice)) &&
-    (!vl.length||vl.includes(r.vlastnictvi)) &&
+    (!vl.length||vl.includes(r.vlastnictvi)) && (!st.length||st.includes(r.energeticky_stitek)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
     (msl==null||(r.sleva_pct!=null&&r.sleva_pct>=msl)) &&
@@ -245,6 +253,13 @@ function detail(i,tr){
       <div class="kv"><span>Stav</span><b>${r.stav||'–'}</b></div>
       <div class="kv"><span>Rok výstavby</span><b>${r.rok_vystavby||'–'}</b></div>
       <div class="kv"><span>Balkon / parkování</span><b>${r.balkon||'–'} / ${r.parkovani||'–'}</b></div>
+      <div class="kv"><span>Patro</span><b>${r.patro!=null?r.patro+(r.pater_celkem!=null?' / '+r.pater_celkem:''):'–'}</b></div>
+      <div class="kv"><span>Výtah</span><b>${r.vytah||'–'}</b></div>
+      <div class="kv"><span>Sklep</span><b>${r.sklep?('ano'+(r.sklep_m2?', '+r.sklep_m2+' m²':'')):(r.sklep===0?'ne':'–')}</b></div>
+      ${r.zahrada_m2?`<div class="kv"><span>Zahrada</span><b>${r.zahrada_m2} m²</b></div>`:''}
+      <div class="kv"><span>Typ stavby</span><b>${r.typ_stavby||'–'}</b></div>
+      <div class="kv"><span>Energetický štítek</span><b>${r.energeticky_stitek||'–'}</b></div>
+      ${r.datum_vlozeni?`<div class="kv"><span>Datum vložení</span><b>${r.datum_vlozeni}</b></div>`:''}
       <div class="kv"><span>Vlastnictví</span><b>${r.vlastnictvi||'–'}</b></div>
       ${r.vlastnictvi==='Družstevní'?`<div class="kv"><span>Anuita</span><b${r.anuita_stav==='nesplacena'?' style="color:var(--bad)"':''}>${
         {nesplacena:'⚠️ nesplacená (viz popis inzerátu)', splacena:'splacená', neznamo:'zmíněna, stav nejasný z textu'}[r.anuita_stav] || 'v popisu neuvedeno'

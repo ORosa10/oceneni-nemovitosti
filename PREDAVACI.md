@@ -255,6 +255,62 @@ i `cenova_mapa.yml`) přidán krok `git fetch origin main && git reset --hard
 origin/main` hned po checkoutu — běh vždy začíná z opravdu nejnovějšího
 main. Po opravě proběhl ruční test úspěšně.
 
+### g) Vlastnictví, anuita a doplňkové informace z detailu (2026-07-15)
+Uživatel si hrál s appkou a navrhl tři vylepšení filtrů: rozsah slevy (ne jen
+minimum), filtr na vlastnictví (osobní/družstevní), a red-flag na nesplacenou
+anuitu u družstevních bytů. Provedena diagnostika přes Actions proti reálným
+datům ze Sreality (dočasný skript `scripts/_diag_pole.py`, smazán po dokončení):
+
+- **Vlastnictví**: pole `ownership.name` v detailu Sreality vrací přímo
+  "Osobní" / "Družstevní" / "Státní/obecní" — stejné hodnoty jako filtr na
+  samotném Sreality.cz. Spolehlivé, žádná heuristika potřeba.
+- **Anuita**: pole `annuity` ze Sreality NENÍ použitelné — u ověřených
+  vzorků vždy `0`/`null`, i když text popisu jasně mluví o konkrétní
+  nesplacené částce (např. "nesplacená anuita ve výši přibližně 670 000 Kč").
+  Stav anuity se proto odvozuje HEURISTIKOU z volného textu
+  `advert_description` (klíčová slova "nesplacen"/"neuhrazen"/"zbývá
+  doplatit" → red flag; "splacen"/"uhrazen"/"vypořádán" → v pořádku;
+  zmíněno, ale nejednoznačné → "neznámo"; nezmíněno vůbec → nelze určit).
+  Otestováno na 7 reálných textech ze Sreality, všechny prošly správně.
+  V appce jasně označeno jako heuristika, ne jistota.
+- Sleva: doplněn horní limit vedle spodního (stejný `row2` vzor jako cena/
+  plocha).
+
+Uživatel se dále zeptal, jestli by šlo odhadnout stáří domu z fotky (AI
+vision). Zamítnuto — přesnost by byla hrubá (dekády, ne konkrétní rok) a
+CORNERSTONE koeficient věku je na přesnost citlivý; chybný odhad by mohl
+zkreslit hodnotu hůř, než když rok chybí a koeficient je 0. Navíc by šlo
+o odvozený/odhadnutý vstup bez jistoty — přesně proti hard rule "žádné
+tiché náhrady". Neimplementováno.
+
+Následně uživatel navrhl využít stejný denní screening (detail inzerátu,
+stejně jako pro vlastnictví/anuitu) k dotažení dalších polí, která Sreality
+posílá zdarma spolu s detailem. Ověřeno diagnostikou, uživatel vybral:
+energetický štítek (PENB, pole `energy_efficiency_rating_cb`) a sadu
+"patro/výtah/sklep/zahrada/typ stavby" (pole `floor_number`, `floors`,
+`elevator`, `cellar`, `cellar_area`, `garden_area`, `building_type`). Navíc
+doplněno `datum_vlozeni` (pole `since` — skutečné datum zveřejnění na
+Sreality, přesnější než `first_seen`, což je jen okamžik prvního zachycení
+naším importem). Uživatel VYNECHAL nabízenou možnost sledovat historii ceny
+(pole `price_summary_old_czk`) — zůstává jako možné budoucí rozšíření,
+neimplementováno.
+
+Všechna tato pole jsou ČISTĚ INFORMAČNÍ — zobrazují se v detailu nabídky
+a částečně jako filtr (vlastnictví, energetický štítek, výtah), ale
+NEVSTUPUJÍ do oceňovacího vzorce v `valuation.py` (ten zůstává cornerstone,
+beze změny).
+
+**Backfill existujících nabídek**: všech ~4700 nabídek už má `detail_at`
+vyplněné (100% pokrytí z dřívějška), takže normální denní běh (500/den,
+selektor `detail_at IS NULL`) je nedotáhne zpětně. Uživatel odsouhlasil
+NEZRYCHLOVAT limit (zůstává 500/den, stejné zdůvodnění jako u cenové mapy —
+riziko IP banu) — nová pole se tedy do appky postupně doplní přirozeně
+v horizontu ~9–10 dní, jak import prochází existující nabídky (potřeboval by
+se ale nejdřív resetovat `detail_at` u starých záznamů, což zatím NENÍ
+provedeno — bez toho `WHERE detail_at IS NULL` nevybere žádné existující
+řádky a nová pole se naplní jen u NOVÝCH nabídek, které denní import teprve
+uvidí poprvé. Backfill starých záznamů je otevřený bod, viz sekce 8).
+
 ## 6. PRIORITY HODNOT A OCHRANA RUČNÍCH VSTUPŮ (klíčové!)
 
 Ruční hodnota u nabídky > automatika (detail Sreality / MFČR / POI matice).
