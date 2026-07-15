@@ -77,6 +77,8 @@ a{color:var(--acc)}
   <div class="row2"><input id="f-cmin" type="number" placeholder="od" step="0.5"><input id="f-cmax" type="number" placeholder="do" step="0.5"></div>
   <h2>Plocha (m²)</h2>
   <div class="row2"><input id="f-pmin" type="number" placeholder="od"><input id="f-pmax" type="number" placeholder="do"></div>
+  <h2>Patro</h2>
+  <div class="row2"><input id="f-patro-min" type="number" placeholder="od, např. 1 (bez přízemí)" step="1"><input id="f-patro-max" type="number" placeholder="do" step="1"></div>
   <h2>Sleva vs. tržní (%)</h2>
   <div class="row2"><input id="f-sleva" type="number" placeholder="od, např. 10" step="1"><input id="f-sleva-max" type="number" placeholder="do" step="1"></div>
   <h2>Min. výnos z nájmu (%)</h2>
@@ -149,6 +151,7 @@ function reset(){document.querySelectorAll('aside select,aside input').forEach(e
 function render(){
   const ct=vals('f-ctvrt'), dp=vals('f-disp'), vl=vals('f-vlastnictvi'), st=vals('f-stitek');
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
+        patroMin=num('f-patro-min'), patroMax=num('f-patro-max'),
         msl=num('f-sleva'), mslMax=num('f-sleva-max'), mvy=num('f-vynos');
   const bez=document.getElementById('f-bezceny').checked;
   const jenWatch=document.getElementById('f-jen-watchlist').checked;
@@ -164,6 +167,8 @@ function render(){
     (!vl.length||vl.includes(r.vlastnictvi)) && (!st.length||st.includes(r.energeticky_stitek)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
+    (patroMin==null||(r.patro!=null&&r.patro>=patroMin)) &&
+    (patroMax==null||(r.patro!=null&&r.patro<=patroMax)) &&
     (msl==null||(r.sleva_pct!=null&&r.sleva_pct>=msl)) &&
     (mslMax==null||(r.sleva_pct!=null&&r.sleva_pct<=mslMax)) &&
     (mvy==null||(r.prosty_vynos_pct!=null&&r.prosty_vynos_pct>=mvy)));
