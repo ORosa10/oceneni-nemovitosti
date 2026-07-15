@@ -1,0 +1,80 @@
+{
+  "zkontrolovano_detailu": 300,
+  "ownership_rozlozeni": {
+    "Osobní": 284,
+    "Družstevní": 15,
+    "Státní/obecní": 1
+  },
+  "pocet_nenulovych_annuity": 3,
+  "nenulove_annuity_priklady": [
+    {
+      "hash_id": "3045621836",
+      "ownership": {
+        "name": "Osobní",
+        "value": 1
+      },
+      "annuity": 0,
+      "popis_kolem_anuity": null
+    },
+    {
+      "hash_id": "4088427340",
+      "ownership": {
+        "name": "Osobní",
+        "value": 1
+      },
+      "annuity": 0,
+      "popis_kolem_anuity": null
+    },
+    {
+      "hash_id": "176120652",
+      "ownership": {
+        "name": "Družstevní",
+        "value": 2
+      },
+      "annuity": 0,
+      "popis_kolem_anuity": null
+    }
+  ],
+  "druzstevni_text_o_anuite_vzorky": [
+    {
+      "hash_id": "2241982540",
+      "annuity_pole": null,
+      "text_o_anuite": "Byt je v družstevním vlastnictví se splacenou anuitou a prošel kompletní, právě dokončenou rekonstrukcí s důrazem na kvalitní materiály, moderní technologie a precizní provedení.\r"
+    },
+    {
+      "hash_id": "1106370636",
+      "annuity_pole": null,
+      "text_o_anuite": "K bytu náleží nesplacená anuita ve výši přibližně 670 000 Kč, která je splácena měsíční částkou přibližně 3.995 Kč. Mimořádná splátka anuity je možná vždy 1× ročně.\r"
+    },
+    {
+      "hash_id": "121434188",
+      "annuity_pole": null,
+      "text_o_anuite": "Byt je družstevní, má splacenou anuitu. Převod do osobního vlastnictví v tuto chvíli není možný, proto je potřeba financování z vlastních zdrojů, případně úvěrem se zástavou jiné nemovitos"
+    },
+    {
+      "hash_id": "4258299980",
+      "annuity_pole": null,
+      "text_o_anuite": "(anuita v textu nezmíněna)"
+    },
+    {
+      "hash_id": "4066680908",
+      "annuity_pole": null,
+      "text_o_anuite": " Byt se nabízí v družstevním vlastnictví se zcela splacenou anuitou, bez možnosti převodu do osobního vlastnictví. Je situován ve zvýšeném přízemí cihlového, zatepleného a revitalizovaného domu s orientací do klidného"
+    },
+    {
+      "hash_id": "2318524492",
+      "annuity_pole": null,
+      "text_o_anuite": "(anuita v textu nezmíněna)"
+    },
+    {
+      "hash_id": "2066866252",
+      "annuity_pole": null,
+      "text_o_anuite": "Byt je v družstevním vlastnictví s plně splacenou anuitou (převod do osobního vlastnictví aktuálně není možný). Byt je možné podnajímat, což z bytu dělá skvělou volbou pro vlastní bydlení i jako investici. V"
+    },
+    {
+      "hash_id": "2451566668",
+      "annuity_pole": null,
+      "text_o_anuite": "e dostupné lokalitě Praha 10 – Strašnice, v ulici Dürerova. Anuita je plně splacena.\r"
+    }
+  ]
+}
