@@ -171,9 +171,24 @@ def import_detaily(limit: int = 500) -> int:
         con.execute("ALTER TABLE listings ADD COLUMN detail_at TEXT")
     except sqlite3.OperationalError:
         pass
+    # Priorita fronty (2026-07-20, na žádost uživatele): dřív se šlo čistě
+    # FIFO podle id (nejstarší nabídka první). To ale u nových nabídek s
+    # extrémní slevou znamenalo, že se dostanou do týdenního reportu
+    # příležitostí dřív, než se u nich stihne dotáhnout vlastnictví/anuita
+    # (=riziko, že se ukáže jako "příležitost" nabídka, kterou ve
+    # skutečnosti squeezuje nesplacená anuita nebo jiná externalita).
+    # Nově: přednost mají nabídky s nejvyšší už spočtenou slevou (sleva_pct
+    # z tabulky valuations, počítaná i bez detailu na základě defaultních
+    # koeficientů) — a úplně nové nabídky bez jakéhokoli ocenění mají
+    # prioritu nejvyšší ze všech, aby detail měly hotový hned při prvním
+    # výpočtu tržní hodnoty. Rychlost (500/den) se neměnila.
     radky = con.execute(
-        "SELECT id, external_id FROM listings WHERE source='sreality' AND active=1 "
-        "AND detail_at IS NULL ORDER BY id LIMIT ?", (limit,)).fetchall()
+        "SELECT l.id, l.external_id FROM listings l "
+        "LEFT JOIN valuations v ON v.listing_id = l.id "
+        "WHERE l.source='sreality' AND l.active=1 AND l.detail_at IS NULL "
+        "ORDER BY CASE WHEN v.listing_id IS NULL THEN 999999 "
+        "ELSE COALESCE(v.sleva_pct, -1000) END DESC "
+        "LIMIT ?", (limit,)).fetchall()
     n, chyby = 0, 0
     for r in radky:
         try:
