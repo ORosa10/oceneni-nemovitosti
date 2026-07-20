@@ -432,3 +432,29 @@ denním během.
   sazby hypotéky z ČBA Hypomonitoru (bod 5f), se záložní hodnotou 4,2 % při
   chybě/nedostupnosti zdroje. Cestou nalezen a opraven concurrency bug
   (exit 128 na git push) v obou měsíčních/denních workflow — viz bod 5f.
+- 2026-07-20: přidán filtr patra (od-do) proti levným nabídkám jen kvůli
+  přízemí/0. patru (úkol #25); filtr "jen s výtahem" zůstal beze změny.
+- 2026-07-20: na žádost uživatele (detail nabídky měl "hodně čísel" bez
+  jasného zvýraznění) upraveno CSS: běžné hodnoty méně tučné, jen klíčové
+  řádky (Rozdíl sleva vs. tržní, Celkový výnos IRR, Pokrytí splátky nájmem)
+  zvýrazněny barevně/velikostí (`.kv.hi`). Žádná logika ani data se
+  neměnily. Následně přidáno i `align-items:start` do `.grid` — karty
+  v detailu se přestaly natahovat na výšku nejdelší karty (méně
+  prázdného místa).
+- 2026-07-20: uživatel při kontrole týdenního reportu příležitostí upozornil
+  na riziko, že extrémní slevy u nových nabídek mohou být (stejně jako
+  dřív u anuit) uměle nafouknuté nějakou externalitou, kterou ještě
+  neznáme, protože detail (vlastnictví/anuita) se k nim ještě nedotáhl.
+  Diagnostikou zjištěno: fronta `import_detaily()` byla čistě FIFO podle
+  `id` (nejstarší nabídka první), takže nové nabídky s obřím zdáním slevy
+  čekaly na verifikaci detailu jako poslední — přesně ty, co se objeví
+  v top 10 týdenního reportu. Uživatel navrhl řadit frontu podle aktuálně
+  spočtené slevy (`valuations.sleva_pct`, počítá se denně i bez detailu na
+  defaultních koeficientech) sestupně, s tím že úplně nové nabídky bez
+  jakéhokoli ocenění mají nejvyšší prioritu ze všech. Implementováno
+  v `src/sreality_detail.py` (`import_detaily`), rychlost 500/den beze
+  změny. Vedlejší zjištění při diagnostice: fronta bez detailu se od
+  cca 15.–16. 7. přestala smysluplně čistit (~370 nabídek trvale
+  nezpracováno) i přes zdánlivě úspěšné denní běhy (`docs/detail_log.txt`
+  hlásil "500 nabídek, chyb 0") — příčina nebyla dál zkoumána, sledovat
+  po nasazení, jestli se s novým řazením fronta reálně zmenšuje.
