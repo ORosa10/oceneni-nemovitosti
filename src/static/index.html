@@ -72,8 +72,12 @@ a{color:var(--acc)}
   <select id="f-ctvrt" multiple></select>
   <h2>Dispozice</h2>
   <select id="f-disp" multiple></select>
-  <h2>Vlastnictví</h2>
-  <select id="f-vlastnictvi" multiple></select>
+  <h2>Vlastnictví (družstevní)</h2>
+  <select id="f-druzstevni-rezim">
+    <option value="">nerozlišovat</option>
+    <option value="vyloucit">vyloučit družstevní</option>
+    <option value="jen">jen družstevní</option>
+  </select>
   <h2>Energetický štítek</h2>
   <select id="f-stitek" multiple></select>
   <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:6px">
@@ -97,8 +101,11 @@ a{color:var(--acc)}
   <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center">
     <input id="f-zobraz-skryte" type="checkbox" style="width:auto">zobrazit skryté</label>
   <h2>Anuita (družstevní byty)</h2>
-  <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center" title="Textová heuristika z popisu inzerátu, nemusí být 100% spolehlivá">
-    <input id="f-jen-anuita" type="checkbox" style="width:auto">⚠️ jen nesplacená anuita</label>
+  <select id="f-anuita-rezim" title="Textová heuristika z popisu inzerátu, nemusí být 100% spolehlivá">
+    <option value="">nerozlišovat</option>
+    <option value="vyloucit">vyloučit nesplacenou anuitu</option>
+    <option value="jen">⚠️ jen nesplacená anuita</option>
+  </select>
   <button class="btn-p" onclick="render()">Filtrovat</button>
   <button class="btn-s" onclick="reset()">Zrušit filtry</button>
 </aside>
@@ -142,8 +149,6 @@ async function boot(){
   document.getElementById('f-ctvrt').innerHTML=Object.keys(cts).sort().map(c=>`<option value="${c}">${c} (${cts[c]})</option>`).join('');
   const ds=[...new Set(ALL.map(r=>r.dispozice).filter(Boolean))].sort();
   document.getElementById('f-disp').innerHTML=ds.map(d=>`<option>${d}</option>`).join('');
-  const vl=[...new Set(ALL.map(r=>r.vlastnictvi).filter(Boolean))].sort();
-  document.getElementById('f-vlastnictvi').innerHTML=vl.map(v=>`<option>${v}</option>`).join('');
   const st=[...new Set(ALL.map(r=>r.energeticky_stitek).filter(Boolean))].sort();
   document.getElementById('f-stitek').innerHTML=st.map(s=>`<option>${s}</option>`).join('');
   render();
@@ -154,22 +159,26 @@ function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cen
 function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
 
 function render(){
-  const ct=vals('f-ctvrt'), dp=vals('f-disp'), vl=vals('f-vlastnictvi'), st=vals('f-stitek');
+  const ct=vals('f-ctvrt'), dp=vals('f-disp'), st=vals('f-stitek');
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         patroMin=num('f-patro-min'), patroMax=num('f-patro-max'),
         msl=num('f-sleva'), mslMax=num('f-sleva-max'), mvy=num('f-vynos');
   const bez=document.getElementById('f-bezceny').checked;
   const jenWatch=document.getElementById('f-jen-watchlist').checked;
   const zobrSkryte=document.getElementById('f-zobraz-skryte').checked;
-  const jenAnuita=document.getElementById('f-jen-anuita').checked;
+  const druzstevniRezim=document.getElementById('f-druzstevni-rezim').value;
+  const anuitaRezim=document.getElementById('f-anuita-rezim').value;
   const jenVytah=document.getElementById('f-jen-vytah').checked;
   view=ALL.filter(r=>
     (bez||r.cena_czk!=null) &&
     (zobrSkryte||!r.skryto) && (!jenWatch||r.watchlist) &&
-    (!jenAnuita||r.anuita_stav==='nesplacena') &&
+    (druzstevniRezim!=='vyloucit'||r.vlastnictvi!=='Družstevní') &&
+    (druzstevniRezim!=='jen'||r.vlastnictvi==='Družstevní') &&
+    (anuitaRezim!=='vyloucit'||r.anuita_stav!=='nesplacena') &&
+    (anuitaRezim!=='jen'||r.anuita_stav==='nesplacena') &&
     (!jenVytah||r.vytah==='Ano') &&
     (!ct.length||ct.includes(r.ctvrt)) && (!dp.length||dp.includes(r.dispozice)) &&
-    (!vl.length||vl.includes(r.vlastnictvi)) && (!st.length||st.includes(r.energeticky_stitek)) &&
+    (!st.length||st.includes(r.energeticky_stitek)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
     (patroMin==null||(r.patro!=null&&r.patro>=patroMin)) &&
