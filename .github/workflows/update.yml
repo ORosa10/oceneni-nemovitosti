@@ -59,6 +59,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/nemovitosti.db data/najemne_mfcr.csv docs/ 2>/dev/null || git add data/nemovitosti.db docs/
-          git diff --cached --quiet || git commit -m "Denní aktualizace dat ($(date +%F))"
-          git pull --rebase origin main || true
-          git push
+          if git diff --cached --quiet; then
+            echo "žádné změny k commitu"
+            exit 0
+          fi
+          git commit -m "Denní aktualizace dat ($(date +%F))"
+          # "Ruční úprava nabídky" teď běží ve vlastní concurrency skupině
+          # (viz uprava.yml), takže se s tímhle během může skutečně potkat —
+          # zkusit push víckrát s rebase, než to vzdát.
+          n=0
+          until git pull --rebase origin main && git push; do
+            n=$((n+1))
+            if [ "$n" -ge 8 ]; then
+              echo "Push selhal i po opakovaných pokusech."
+              exit 1
+            fi
+            sleep $((RANDOM % 8 + 2))
+          done

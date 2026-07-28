@@ -52,6 +52,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/price_map.csv data/sazba_hypoteky.csv data/nemovitosti.db docs/
-          git diff --cached --quiet || git commit -m "Měsíční aktualizace cenové mapy a sazby hypotéky ($(date +%F))"
-          git pull --rebase origin main || true
-          git push
+          if git diff --cached --quiet; then
+            echo "žádné změny k commitu"
+            exit 0
+          fi
+          git commit -m "Měsíční aktualizace cenové mapy a sazby hypotéky ($(date +%F))"
+          n=0
+          until git pull --rebase origin main && git push; do
+            n=$((n+1))
+            if [ "$n" -ge 8 ]; then
+              echo "Push selhal i po opakovaných pokusech."
+              exit 1
+            fi
+            sleep $((RANDOM % 8 + 2))
+          done
