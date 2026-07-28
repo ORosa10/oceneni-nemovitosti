@@ -59,7 +59,31 @@ def migruj(con):
                 # datum_vlozeni = skutečné datum zveřejnění na Sreality (pole
                 # `since`), na rozdíl od first_seen, což je jen okamžik, kdy si
                 # toho poprvé všiml náš vlastní import.
-                "ALTER TABLE listings ADD COLUMN datum_vlozeni TEXT"):
+                "ALTER TABLE listings ADD COLUMN datum_vlozeni TEXT",
+                # Vedlejší plochy (2026-07-27, na žádost uživatele) — ze
+                # strukturovaných polí Sreality floor_area/terrace_area/
+                # loggia_area/balcony_area, KDYŽ je realitka vyplnila (jinak
+                # zůstávají NULL, žádné odhadování z volného textu popisu).
+                # plocha_cista_m2 = floor_area, používá se jen když je MENŠÍ
+                # než plocha_m2 (Užitná plocha) — signál, že Užitná plocha
+                # v sobě má i vedlejší prostory. Viz valuation.py
+                # (jadro_a_vedlejsi_plocha, VAHA_TERASA_LODZIE_BALKON).
+                "ALTER TABLE listings ADD COLUMN plocha_cista_m2 REAL",
+                "ALTER TABLE listings ADD COLUMN terasa_m2 REAL",
+                "ALTER TABLE listings ADD COLUMN lodzie_m2 REAL",
+                "ALTER TABLE listings ADD COLUMN balkon_m2 REAL",
+                # Postoupení smlouvy s developerem na splátky (2026-07-27,
+                # schváleno uživatelem) — textová heuristika na "postoupen*"
+                # v popisu inzerátu. Inzerovaná cena bývá jen 1. splátka,
+                # NE celková cena — čistě informační red-flag pole, do
+                # oceňovacího vzorce nevstupuje (cena_czk se tiše nemění).
+                "ALTER TABLE listings ADD COLUMN postoupeni_stav TEXT",
+                # Rozpad efektivní plochy pro zobrazení v appce (2026-07-27,
+                # nahrazuje v_koef_balkon_pct — viz valuation.py).
+                "ALTER TABLE valuations ADD COLUMN v_plocha_jadro REAL",
+                "ALTER TABLE valuations ADD COLUMN v_plocha_vedlejsi_m2 REAL",
+                "ALTER TABLE valuations ADD COLUMN v_plocha_zahrada_m2 REAL",
+                "ALTER TABLE valuations ADD COLUMN v_plocha_efektivni REAL"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -77,6 +101,8 @@ CREATE TABLE IF NOT EXISTS listings (
     vlastnictvi TEXT, anuita_stav TEXT,
     energeticky_stitek TEXT, patro INTEGER, pater_celkem INTEGER, vytah TEXT,
     sklep INTEGER, sklep_m2 REAL, zahrada_m2 REAL, typ_stavby TEXT, datum_vlozeni TEXT,
+    plocha_cista_m2 REAL, terasa_m2 REAL, lodzie_m2 REAL, balkon_m2 REAL,
+    postoupeni_stav TEXT,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (
@@ -92,7 +118,9 @@ CREATE TABLE IF NOT EXISTS valuations (
     v_cena_mapy_m2 REAL, v_faktor_velikosti REAL, v_zakladni_cena_m2 REAL,
     v_zakladni_rucne INTEGER, v_koef_lokalita_pct REAL, v_koef_stav_pct REAL,
     v_koef_vek_pct REAL, v_koef_balkon_pct REAL, v_koef_dalsi_pct REAL,
-    v_vek_pouzity REAL, computed_at TEXT
+    v_vek_pouzity REAL, computed_at TEXT,
+    v_plocha_jadro REAL, v_plocha_vedlejsi_m2 REAL, v_plocha_zahrada_m2 REAL,
+    v_plocha_efektivni REAL
 );
 """
 

@@ -458,3 +458,52 @@ denním během.
   nezpracováno) i přes zdánlivě úspěšné denní běhy (`docs/detail_log.txt`
   hlásil "500 nabídek, chyb 0") — příčina nebyla dál zkoumána, sledovat
   po nasazení, jestli se s novým řazením fronta reálně zmenšuje.
+- 2026-07-27/28: uživatel při procházení top nabídek narazil na konkrétní
+  případ (byt Strašnice, Strančická, 138 m²), kde popis inzerátu psal
+  "užitná plocha 138,5 m2 (75,3 m2 podlaha + terasa 61,2 m2 + sklep 2 m2)"
+  — Sreality u tohohle inzerátu (na rozdíl od jiných) NEODEČETLA terasu
+  z "Užitné plochy", takže náš model počítal 61 m2 terasy stejnou sazbou
+  jako obytný prostor. Ověřeno přímo v syrových datech REST API
+  (`/api/v1/estates/{id}`, ne jen zobrazený text): Sreality MÁ strukturovaná
+  číselná pole `floor_area`, `terrace_area`, `loggia_area`, `balcony_area`,
+  `garden_area`, `cellar_area` — ale realitky je vyplňují nekonzistentně
+  (u jiných 2 testovaných bytů — Řeporyje se zahradou 335 m2, Stodůlky
+  s komorou — byla buď všechna prázdná, nebo naopak dobře oddělená).
+  Uživatel navrhl a schválil obecný algoritmus (žádné hádání z volného
+  textu, jen strukturovaná pole):
+  1. Když Sreality dá `floor_area` MENŠÍ než Užitná plocha (`plocha_m2`) A
+     zároveň nějakou nenulovou plochu terasy/lodžie/balkonu, jádrová
+     plocha bytu = floor_area, ne Užitná plocha.
+  2. Terasa+lodžie+balkon (m²) se k jádru přičítají s váhou 25 %
+     (`VAHA_TERASA_LODZIE_BALKON`), zahrada s váhou 15 %
+     (`VAHA_ZAHRADA`) — "efektivní plocha", která nahrazuje `plocha_m2`
+     všude ve vzorci (faktor velikosti bytu i finální × plocha).
+  3. Sklep se nepočítá (zůstává čistě informační, `sklep_m2`).
+  4. Kde strukturovaná data chybí, plocha se NEMĚNÍ (žádný odhad).
+  Tohle NAHRAZUJE původní plochý bonus `BALKON_PCT` (+1,01 % za pouhou
+  přítomnost balkonu bez ohledu na velikost) — ten byl u velkých teras
+  extrémně nedostatečný (viz Strašnice: falešná "sleva" 28,3 % se po
+  opravě propadla na −9,6 %, tedy spíš mírně předražené, ne příležitost).
+  Implementováno: `src/valuation.py` (`jadro_a_vedlejsi_plocha`,
+  `VAHA_TERASA_LODZIE_BALKON`, `VAHA_ZAHRADA` — `BALKON_PCT` odstraněn),
+  nové sloupce `plocha_cista_m2`/`terasa_m2`/`lodzie_m2`/`balkon_m2`
+  v `listings` (`src/db.py`, `src/sreality_detail.py`), nový krok
+  "Efektivní plocha" v rozpadu výpočtu v appce. Ověřeno na 3 reálných
+  příkladech před nasazením (Strašnice, Stodůlky, Řeporyje) — mechanismus
+  se choval přesně podle očekávání. Proveden jednorázový reset
+  `detail_at=NULL` pro všechny aktivní nabídky (nová pole je potřeba
+  dotáhnout), fronta je řazená podle slevy (viz výše), takže se nejdřív
+  opraví nejpodezřelejší "příležitosti".
+- 2026-07-27: souběžně schváleno a implementováno "postoupení" jako nový
+  red-flag (textová heuristika na "postoupen*" v popisu, `postoupeni_stav`
+  sloupec + filtr v appce) — u rozestavěných bytů prodávaných na splátky
+  bývá inzerovaná cena jen 1. splátka developerovi, ne celková cena
+  (konkrétní příklad: byt Kamýk, Imrychova, inzerováno 1 263 720 Kč,
+  skutečná celková cena 6 990 000 Kč na 4 splátky do kolaudace 09/2028).
+  `cena_czk` se NEMĚNÍ (nejistota o přesné celkové ceně), jen se to
+  zobrazí jako varování a dá se vyfiltrovat.
+- Vedlejší zjištění (2026-07-27, nedořešeno): u bytu Stodůlky byl
+  `v_koef_lokalita_pct` v produkčně uložené valuaci 0,0, přestože
+  `lokalita_auto` odpovídala kategorii +5 % — možný samostatný bug
+  v `ocenit_vse()` nesouvisející s touto úpravou, nebyl dál zkoumán,
+  stojí za prověření příště.

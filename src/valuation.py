@@ -34,8 +34,23 @@ STAV = {
 VEK_PASMA = [(0, 10.0), (10, 5.0), (20, 0.0), (30, -3.0), (40, -6.0),
              (50, -8.0), (60, -10.0), (70, -11.0), (80, -12.0), (90, -12.0)]
 
-BALKON_PCT = 1.01        # BM4 — příplatek balkon/terasa (% k ceně/m2)
 PARKOVANI_KC = 400000    # BM5 — příplatek parkování/garáž (Kč, absolutně)
+
+# Vedlejší plochy — terasa/lodžie/balkon/zahrada (schváleno uživatelem
+# 2026-07-27, viz PREDAVACI.md). NAHRAZUJE původní plochý bonus BALKON_PCT
+# (+1,01 % za pouhou přítomnost balkonu bez ohledu na velikost) — ten dělal
+# u bytů s velkou terasou (např. 60+ m²) tržní hodnotu absurdně nadhodnocenou,
+# protože se plocha terasy počítala stejnou sazbou jako obytný prostor.
+# Nově: když Sreality dá číselnou plochu (pole floor_area/terrace_area/
+# loggia_area/balcony_area — ověřeno v REST API), použije se jádrová plocha
+# bytu (floor_area) + vedlejší plochy se sníženou váhou. Zahrada má vlastní,
+# nižší váhu (jiný typ hodnoty — pozemek, ne stavba). Sklep se do vzorce
+# NEZAPOČÍTÁVÁ (zůstává jen informační pole, viz sklep_m2).
+# Když strukturovaná data chybí (realitka je nevyplnila), plocha se
+# NEMĚNÍ — žádné odhadování z volného textu popisu. Viz
+# jadro_a_vedlejsi_plocha().
+VAHA_TERASA_LODZIE_BALKON = 0.25
+VAHA_ZAHRADA = 0.15
 
 # Výnosový model (sloupce AF–AL)
 RUST_NAJMU = 0.05        # AF
@@ -97,6 +112,22 @@ def faktor_velikosti(plocha):
     return 1.0
 
 
+def jadro_a_vedlejsi_plocha(l):
+    """Rozdělí plochu nabídky na (jádrová plocha bytu, vedlejší plocha
+    terasa+lodžie+balkon v m²) podle strukturovaných polí Sreality.
+    `plocha_cista_m2` (floor_area) se použije jen když je MENŠÍ než
+    `plocha_m2` (Užitná plocha) A zároveň je vyplněná aspoň jedna vedlejší
+    plocha — to je signál, že Užitná plocha vedlejší prostory opravdu
+    zahrnuje. Jinak vrátí (Užitná plocha, 0) beze změny — chybí-li
+    strukturovaná data, nic se neodhaduje."""
+    plocha_uzitna = l.get("plocha_m2")
+    jadro = l.get("plocha_cista_m2")
+    vedlejsi = (l.get("terasa_m2") or 0.0) + (l.get("lodzie_m2") or 0.0) + (l.get("balkon_m2") or 0.0)
+    if jadro and plocha_uzitna and jadro < plocha_uzitna and vedlejsi > 0:
+        return jadro, vedlejsi
+    return plocha_uzitna, 0.0
+
+
 def _irr(cena, celkem_najem, opravy, zhodnoceni):
     """AL: hledá r tak, aby AJ/(1+r)^20 + AI/(1+r)^10 − AH/(1+r)^10 − B = 0."""
     def npv(r):
@@ -141,9 +172,15 @@ def _skupina_dispozice(dispozice):
 def ocenit_nabidku(l, mapa, najemne_mfcr=None):
     """Ocení jednu nabídku dle modelu. `mapa` = {klic: cena_za_m2} z price_map,
     `najemne_mfcr` = tabulka MFČR {čtvrť: {skupina: Kč/m²}} (viz nacti_najemne_mfcr)."""
-    plocha, cena = l.get("plocha_m2"), l.get("cena_czk")
-    if not plocha or not cena:
+    plocha_uzitna, cena = l.get("plocha_m2"), l.get("cena_czk")
+    if not plocha_uzitna or not cena:
         return None
+
+    # Efektivní plocha (schváleno 2026-07-27): jádro bytu + terasa/lodžie/
+    # balkon a zahrada se sníženou váhou — viz VAHA_TERASA_LODZIE_BALKON.
+    jadro, vedlejsi_m2 = jadro_a_vedlejsi_plocha(l)
+    zahrada_m2 = l.get("zahrada_m2") or 0.0
+    plocha = jadro + VAHA_TERASA_LODZIE_BALKON * vedlejsi_m2 + VAHA_ZAHRADA * zahrada_m2
 
     # F: základní cena/m2 — ručně zadaná, jinak cenová mapa × faktor velikosti
     zakladni_rucne = l.get("zakladni_cena_m2")
@@ -162,14 +199,14 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
     k_stav = STAV.get((l.get("stav") or "").strip().lower(), 0.0)             # J×100
     vek_pouzity = min(max(ROK_OCENENI - l["rok_vystavby"], 0), 80) if l.get("rok_vystavby") else None
     k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
-    k_balkon = BALKON_PCT if (l.get("balkon") or "").strip().lower() == "ano" else 0.0  # O
     park = (l.get("parkovani") or "Ne").strip().lower()                       # P/Q
     priplatky = PARKOVANI_KC if park == "ano" else (0 if park == "ne" else 2 * PARKOVANI_KC)
     k_dalsi = float(l.get("dalsi_koef_pct") or 0.0)                           # R
 
-    # S, T, U, V, W, X — přesně dle sheetu
+    # S, T, U, X — přesně dle sheetu (koeficient balkonu nahrazen efektivní
+    # plochou výše — viz VAHA_TERASA_LODZIE_BALKON)
     koef = (1 + k_lok / 100) * (1 + k_stav / 100) * (1 + k_vek / 100) \
-        * (1 + k_balkon / 100) * (1 + k_dalsi / 100)
+        * (1 + k_dalsi / 100)
     vysledna_m2 = zakladni * koef
     cena_za_byt = plocha * vysledna_m2
     trzni = cena_za_byt + priplatky
@@ -189,8 +226,12 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
         "v_faktor_velikosti": round(velikost_faktor, 4),
         "v_zakladni_cena_m2": round(zakladni),
         "v_zakladni_rucne": bool(zakladni_rucne),
+        "v_plocha_jadro": round(jadro, 2) if jadro else None,
+        "v_plocha_vedlejsi_m2": round(vedlejsi_m2, 2),
+        "v_plocha_zahrada_m2": round(zahrada_m2, 2),
+        "v_plocha_efektivni": round(plocha, 2),
         "v_koef_lokalita_pct": k_lok, "v_koef_stav_pct": k_stav,
-        "v_koef_vek_pct": round(k_vek, 2), "v_koef_balkon_pct": k_balkon,
+        "v_koef_vek_pct": round(k_vek, 2),
         "v_koef_dalsi_pct": k_dalsi, "v_vek_pouzity": vek_pouzity,
     }
 

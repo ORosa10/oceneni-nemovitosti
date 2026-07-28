@@ -165,6 +165,44 @@ def _datum_vlozeni(d):
     return str(v) if v else None
 
 
+# Vedlejší plochy (2026-07-27, na žádost uživatele) — ze strukturovaných
+# číselných polí Sreality (floor_area/terrace_area/loggia_area/balcony_area),
+# ověřeno přímo v REST API (ne jen v odhadu). Populovaná jsou JEN když je
+# realitka vyplnila — jinak zůstávají None, žádné odhadování z volného textu.
+# Použití: valuation.py, jadro_a_vedlejsi_plocha().
+def _cislo(v):
+    return float(v) if isinstance(v, (int, float)) else None
+
+
+def _plocha_cista(d):
+    return _cislo(d.get("floor_area"))
+
+
+def _terasa_m2(d):
+    return _cislo(d.get("terrace_area"))
+
+
+def _lodzie_m2(d):
+    return _cislo(d.get("loggia_area"))
+
+
+def _balkon_m2(d):
+    return _cislo(d.get("balcony_area"))
+
+
+# Postoupení smlouvy s developerem na splátky (2026-07-27, na žádost
+# uživatele, viz PREDAVACI.md) — u rozestavěných/předprodejních bytů bývá
+# inzerovaná cena_czk jen PRVNÍ SPLÁTKA, ne celková cena (zbytek je v
+# "rozpisu plateb" v popisu). To dělá slevu vs. tržní hodnotě uměle
+# obrovskou. Heuristika na klíčové slovo "postoupen*" v popisu inzerátu —
+# čistě informační red-flag pole, cena_czk se NEMĚNÍ (bez jistoty o přesné
+# celkové ceně bychom jen nahrazovali jeden odhad jiným).
+def _postoupeni_stav(popis: str):
+    if not popis:
+        return None
+    return "ano" if re.search(r"postoupen", popis, re.I) else None
+
+
 def import_detaily(limit: int = 500) -> int:
     con = db.connect()
     try:
@@ -199,12 +237,16 @@ def import_detaily(limit: int = 500) -> int:
                 "UPDATE listings SET stav=?, rok_vystavby=?, balkon=?, parkovani=?, "
                 "vlastnictvi=?, anuita_stav=?, energeticky_stitek=?, patro=?, "
                 "pater_celkem=?, vytah=?, sklep=?, sklep_m2=?, zahrada_m2=?, "
-                "typ_stavby=?, datum_vlozeni=?, detail_at=datetime('now') WHERE id=?",
+                "typ_stavby=?, datum_vlozeni=?, plocha_cista_m2=?, terasa_m2=?, "
+                "lodzie_m2=?, balkon_m2=?, postoupeni_stav=?, "
+                "detail_at=datetime('now') WHERE id=?",
                 (_stav(d), _rok(d), _balkon(d), _parkovani(d),
                  _vlastnictvi(d), _anuita_stav(d.get("advert_description")),
                  _energeticky_stitek(d), _patro(d), _pater_celkem(d), _vytah(d),
                  _sklep(d), _sklep_m2(d), _zahrada_m2(d), _typ_stavby(d),
-                 _datum_vlozeni(d), r["id"]))
+                 _datum_vlozeni(d), _plocha_cista(d), _terasa_m2(d),
+                 _lodzie_m2(d), _balkon_m2(d),
+                 _postoupeni_stav(d.get("advert_description")), r["id"]))
             n += 1
         except Exception as e:
             chyby += 1
