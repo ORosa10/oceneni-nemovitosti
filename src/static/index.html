@@ -17,6 +17,11 @@ aside h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(
 aside h2:first-child{margin-top:0}
 select,input{width:100%;background:#0d1220;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:13px}
 select[multiple]{height:130px}
+.checklist{max-height:130px;overflow-y:auto;background:#0d1220;border:1px solid var(--line);border-radius:6px;padding:4px 9px}
+.checklist label{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:13px;cursor:pointer}
+.checklist input{width:auto}
+.checklist-actions{display:flex;gap:8px;margin-top:4px}
+.checklist-actions button{flex:1;background:#232c42;color:var(--tx);font-size:11px;padding:5px}
 .row2{display:flex;gap:8px}
 button{cursor:pointer;border:0;border-radius:6px;padding:9px 12px;font-size:13px;font-weight:600}
 .btn-p{background:var(--acc);color:#fff;width:100%;margin-top:14px}
@@ -69,13 +74,11 @@ a{color:var(--acc)}
 <main>
 <aside>
   <h2>Čtvrť</h2>
-  <select id="f-ctvrt" multiple></select>
-  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
-    <input id="f-ctvrt-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
+  <div class="checklist" id="f-ctvrt"></div>
+  <div class="checklist-actions"><button type="button" onclick="checklistVse('f-ctvrt')">vše</button><button type="button" onclick="checklistZadne('f-ctvrt')">žádné</button></div>
   <h2>Dispozice</h2>
-  <select id="f-disp" multiple></select>
-  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
-    <input id="f-disp-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
+  <div class="checklist" id="f-disp"></div>
+  <div class="checklist-actions"><button type="button" onclick="checklistVse('f-disp')">vše</button><button type="button" onclick="checklistZadne('f-disp')">žádné</button></div>
   <h2>Vlastnictví (družstevní)</h2>
   <select id="f-druzstevni-rezim">
     <option value="">nerozlišovat</option>
@@ -83,13 +86,11 @@ a{color:var(--acc)}
     <option value="jen">jen družstevní</option>
   </select>
   <h2>Stav (dle Sreality)</h2>
-  <select id="f-stav-sreality" multiple></select>
-  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
-    <input id="f-stav-sreality-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
+  <div class="checklist" id="f-stav-sreality"></div>
+  <div class="checklist-actions"><button type="button" onclick="checklistVse('f-stav-sreality')">vše</button><button type="button" onclick="checklistZadne('f-stav-sreality')">žádné</button></div>
   <h2>Energetický štítek</h2>
-  <select id="f-stitek" multiple></select>
-  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
-    <input id="f-stitek-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
+  <div class="checklist" id="f-stitek"></div>
+  <div class="checklist-actions"><button type="button" onclick="checklistVse('f-stitek')">vše</button><button type="button" onclick="checklistZadne('f-stitek')">žádné</button></div>
   <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:6px">
     <input id="f-jen-vytah" type="checkbox" style="width:auto">jen s výtahem</label>
   <h2>Cena (mil. Kč)</h2>
@@ -162,30 +163,43 @@ async function boot(){
   ALL=d.listings; d.price_map.forEach(p=>MAPA[p.ctvrt]=p);
   document.getElementById('gen').textContent='data: '+(d.generated||'').replace('T',' ');
   const cts={}; ALL.forEach(r=>{if(r.ctvrt)cts[r.ctvrt]=(cts[r.ctvrt]||0)+1});
-  document.getElementById('f-ctvrt').innerHTML=Object.keys(cts).sort().map(c=>`<option value="${c}">${c} (${cts[c]})</option>`).join('');
+  renderChecklist('f-ctvrt', Object.keys(cts).sort().map(c=>({hodnota:c,popisek:`${c} (${cts[c]})`})));
   const ds=[...new Set(ALL.map(r=>r.dispozice).filter(Boolean))].sort();
-  document.getElementById('f-disp').innerHTML=ds.map(d=>`<option>${d}</option>`).join('');
+  renderChecklist('f-disp', ds.map(d=>({hodnota:d,popisek:d})));
   const st=[...new Set(ALL.map(r=>r.energeticky_stitek).filter(Boolean))].sort();
-  document.getElementById('f-stitek').innerHTML=st.map(s=>`<option>${s}</option>`).join('');
+  renderChecklist('f-stitek', st.map(s=>({hodnota:s,popisek:s})));
   const stavSr=[...new Set(ALL.map(r=>r.stav_sreality).filter(Boolean))].sort();
-  document.getElementById('f-stav-sreality').innerHTML=stavSr.map(s=>`<option>${s}</option>`).join('');
+  renderChecklist('f-stav-sreality', stavSr.map(s=>({hodnota:s,popisek:s})));
   render();
 }
-const vals=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 const num=id=>{const v=document.getElementById(id).value;return v===''?null:+v;};
-// Víceklikací filtr, kde lze vybrané hodnoty buď zahrnout, nebo (zaškrtnutím
-// "vyloučit vybrané") naopak vyřadit — na žádost uživatele, ať jde snadno
-// říct "chci vše kromě X", ne jen "chci jen X".
-const matchSet=(vybrane,vyloucit,hodnota)=>!vybrane.length||(vyloucit?!vybrane.includes(hodnota):vybrane.includes(hodnota));
+// Checklist filtr (na žádost uživatele, místo víceklikacího <select multiple>
+// s odděleným "vyloučit" přepínačem): každá položka má vlastní zaškrtávátko,
+// defaultně VŠE zaškrtnuto (=žádný filtr). Odškrtnutím některých položek se
+// filtruje jen na zaškrtnuté — takže "chci vše kromě X" (odškrtnout jen X) i
+// "chci jen X" (žádné, pak zaškrtnout X) jde stejně snadno.
+function renderChecklist(id, polozky){
+  document.getElementById(id).innerHTML = polozky.map(p=>
+    `<label><input type="checkbox" checked value="${p.hodnota}">${p.popisek}</label>`).join('');
+}
+function checklistVse(id){document.querySelectorAll('#'+id+' input').forEach(i=>i.checked=true);render();}
+function checklistZadne(id){document.querySelectorAll('#'+id+' input').forEach(i=>i.checked=false);render();}
+// Vrátí {vse: true, pokud jsou zaškrtnuté úplně všechny (= žádný filtr);
+// zaskrtnute: pole hodnot zaškrtnutých položek}.
+function checklistStav(id){
+  const inputs=[...document.querySelectorAll('#'+id+' input')];
+  return {vse: inputs.every(i=>i.checked), zaskrtnute: inputs.filter(i=>i.checked).map(i=>i.value)};
+}
 function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cena_czk');}render();}
-function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
+function reset(){
+  document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});
+  document.querySelectorAll('.checklist input').forEach(i=>i.checked=true);
+  render();
+}
 
 function render(){
-  const ct=vals('f-ctvrt'), dp=vals('f-disp'), st=vals('f-stitek'), stavSr=vals('f-stav-sreality');
-  const ctVyloucit=document.getElementById('f-ctvrt-vyloucit').checked;
-  const dpVyloucit=document.getElementById('f-disp-vyloucit').checked;
-  const stVyloucit=document.getElementById('f-stitek-vyloucit').checked;
-  const stavSrVyloucit=document.getElementById('f-stav-sreality-vyloucit').checked;
+  const ct=checklistStav('f-ctvrt'), dp=checklistStav('f-disp'),
+        st=checklistStav('f-stitek'), stavSr=checklistStav('f-stav-sreality');
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         patroMin=num('f-patro-min'), patroMax=num('f-patro-max'),
         msl=num('f-sleva'), mslMax=num('f-sleva-max'), mvy=num('f-vynos');
@@ -206,9 +220,9 @@ function render(){
     (postoupeniRezim!=='vyloucit'||r.postoupeni_stav!=='ano') &&
     (postoupeniRezim!=='jen'||r.postoupeni_stav==='ano') &&
     (!jenVytah||r.vytah==='Ano') &&
-    matchSet(ct,ctVyloucit,r.ctvrt) && matchSet(dp,dpVyloucit,r.dispozice) &&
-    matchSet(st,stVyloucit,r.energeticky_stitek) &&
-    matchSet(stavSr,stavSrVyloucit,r.stav_sreality) &&
+    (ct.vse||ct.zaskrtnute.includes(r.ctvrt)) && (dp.vse||dp.zaskrtnute.includes(r.dispozice)) &&
+    (st.vse||st.zaskrtnute.includes(r.energeticky_stitek)) &&
+    (stavSr.vse||stavSr.zaskrtnute.includes(r.stav_sreality)) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
     (patroMin==null||(r.patro!=null&&r.patro>=patroMin)) &&
