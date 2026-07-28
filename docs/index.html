@@ -70,16 +70,26 @@ a{color:var(--acc)}
 <aside>
   <h2>Čtvrť</h2>
   <select id="f-ctvrt" multiple></select>
+  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
+    <input id="f-ctvrt-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
   <h2>Dispozice</h2>
   <select id="f-disp" multiple></select>
+  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
+    <input id="f-disp-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
   <h2>Vlastnictví (družstevní)</h2>
   <select id="f-druzstevni-rezim">
     <option value="">nerozlišovat</option>
     <option value="vyloucit">vyloučit družstevní</option>
     <option value="jen">jen družstevní</option>
   </select>
+  <h2>Stav (dle Sreality)</h2>
+  <select id="f-stav-sreality" multiple></select>
+  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
+    <input id="f-stav-sreality-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
   <h2>Energetický štítek</h2>
   <select id="f-stitek" multiple></select>
+  <label style="font-size:12px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:4px">
+    <input id="f-stitek-vyloucit" type="checkbox" style="width:auto">vyloučit vybrané (místo zahrnout)</label>
   <label style="font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center;margin-top:6px">
     <input id="f-jen-vytah" type="checkbox" style="width:auto">jen s výtahem</label>
   <h2>Cena (mil. Kč)</h2>
@@ -157,15 +167,25 @@ async function boot(){
   document.getElementById('f-disp').innerHTML=ds.map(d=>`<option>${d}</option>`).join('');
   const st=[...new Set(ALL.map(r=>r.energeticky_stitek).filter(Boolean))].sort();
   document.getElementById('f-stitek').innerHTML=st.map(s=>`<option>${s}</option>`).join('');
+  const stavSr=[...new Set(ALL.map(r=>r.stav_sreality).filter(Boolean))].sort();
+  document.getElementById('f-stav-sreality').innerHTML=stavSr.map(s=>`<option>${s}</option>`).join('');
   render();
 }
 const vals=id=>[...document.getElementById(id).selectedOptions].map(o=>o.value);
 const num=id=>{const v=document.getElementById(id).value;return v===''?null:+v;};
+// Víceklikací filtr, kde lze vybrané hodnoty buď zahrnout, nebo (zaškrtnutím
+// "vyloučit vybrané") naopak vyřadit — na žádost uživatele, ať jde snadno
+// říct "chci vše kromě X", ne jen "chci jen X".
+const matchSet=(vybrane,vyloucit,hodnota)=>!vybrane.length||(vyloucit?!vybrane.includes(hodnota):vybrane.includes(hodnota));
 function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cena_czk');}render();}
 function reset(){document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});render();}
 
 function render(){
-  const ct=vals('f-ctvrt'), dp=vals('f-disp'), st=vals('f-stitek');
+  const ct=vals('f-ctvrt'), dp=vals('f-disp'), st=vals('f-stitek'), stavSr=vals('f-stav-sreality');
+  const ctVyloucit=document.getElementById('f-ctvrt-vyloucit').checked;
+  const dpVyloucit=document.getElementById('f-disp-vyloucit').checked;
+  const stVyloucit=document.getElementById('f-stitek-vyloucit').checked;
+  const stavSrVyloucit=document.getElementById('f-stav-sreality-vyloucit').checked;
   const cmin=num('f-cmin'), cmax=num('f-cmax'), pmin=num('f-pmin'), pmax=num('f-pmax'),
         patroMin=num('f-patro-min'), patroMax=num('f-patro-max'),
         msl=num('f-sleva'), mslMax=num('f-sleva-max'), mvy=num('f-vynos');
@@ -186,8 +206,9 @@ function render(){
     (postoupeniRezim!=='vyloucit'||r.postoupeni_stav!=='ano') &&
     (postoupeniRezim!=='jen'||r.postoupeni_stav==='ano') &&
     (!jenVytah||r.vytah==='Ano') &&
-    (!ct.length||ct.includes(r.ctvrt)) && (!dp.length||dp.includes(r.dispozice)) &&
-    (!st.length||st.includes(r.energeticky_stitek)) &&
+    matchSet(ct,ctVyloucit,r.ctvrt) && matchSet(dp,dpVyloucit,r.dispozice) &&
+    matchSet(st,stVyloucit,r.energeticky_stitek) &&
+    matchSet(stavSr,stavSrVyloucit,r.stav_sreality) &&
     (cmin==null||r.cena_czk>=cmin*1e6) && (cmax==null||r.cena_czk<=cmax*1e6) &&
     (pmin==null||r.plocha_m2>=pmin) && (pmax==null||r.plocha_m2<=pmax) &&
     (patroMin==null||(r.patro!=null&&r.patro>=patroMin)) &&
@@ -283,7 +304,8 @@ function detail(i,tr){
       <div class="kv"><span>Měsíční nájem</span><b>${fmt(r.najem_mesicni)} Kč</b></div>
       <div class="kv hi"><span>Pokrytí splátky nájmem</span><b>${pct(r.pokryti_splatky_pct)}</b></div></div>
     <div class="card"><h3>Vstupy</h3>
-      <div class="kv"><span>Stav</span><b>${r.stav||'–'}</b></div>
+      <div class="kv"><span>Stav (pro výpočet)</span><b>${r.stav||'–'}</b></div>
+      ${r.stav_sreality?`<div class="kv"><span>Stav (dle Sreality)</span><b>${r.stav_sreality}</b></div>`:''}
       <div class="kv"><span>Rok výstavby</span><b>${r.rok_vystavby||'–'}</b></div>
       <div class="kv"><span>Balkon / parkování</span><b>${r.balkon||'–'} / ${r.parkovani||'–'}</b></div>
       ${r.terasa_m2?`<div class="kv"><span>Terasa</span><b>${r.terasa_m2} m²</b></div>`:''}

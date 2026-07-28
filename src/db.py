@@ -78,6 +78,13 @@ def migruj(con):
                 # NE celková cena — čistě informační red-flag pole, do
                 # oceňovacího vzorce nevstupuje (cena_czk se tiše nemění).
                 "ALTER TABLE listings ADD COLUMN postoupeni_stav TEXT",
+                # Surová hodnota stavu ze Sreality (Novostavba/Projekt/
+                # Ve výstavbě/Velmi dobrý/Dobrý/Špatný/Před rekonstrukcí/
+                # Po rekonstrukci...) — na žádost uživatele 2026-07-28, jako
+                # filtr na Sreality.cz. Čistě informační/filtrovací, NEVSTUPUJE
+                # do vzorce — ten dál používá jen zjednodušené `stav` (viz
+                # valuation.py, cornerstone beze změny).
+                "ALTER TABLE listings ADD COLUMN stav_sreality TEXT",
                 # Rozpad efektivní plochy pro zobrazení v appce (2026-07-27,
                 # nahrazuje v_koef_balkon_pct — viz valuation.py).
                 "ALTER TABLE valuations ADD COLUMN v_plocha_jadro REAL",
@@ -102,7 +109,7 @@ CREATE TABLE IF NOT EXISTS listings (
     energeticky_stitek TEXT, patro INTEGER, pater_celkem INTEGER, vytah TEXT,
     sklep INTEGER, sklep_m2 REAL, zahrada_m2 REAL, typ_stavby TEXT, datum_vlozeni TEXT,
     plocha_cista_m2 REAL, terasa_m2 REAL, lodzie_m2 REAL, balkon_m2 REAL,
-    postoupeni_stav TEXT,
+    postoupeni_stav TEXT, stav_sreality TEXT,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (

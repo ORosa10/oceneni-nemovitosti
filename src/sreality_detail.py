@@ -76,6 +76,17 @@ def _stav(d):
     return STAV_BEZNA
 
 
+def _stav_sreality(d):
+    """Surová hodnota building_condition ze Sreality (Novostavba/Projekt/
+    Ve výstavbě/Velmi dobrý/Dobrý/Špatný/Před rekonstrukcí/Po rekonstrukci/
+    Částečně po rekonstrukci...) — na žádost uživatele 2026-07-28, čistě
+    informační/filtrovací pole (jako filtr na Sreality.cz), NEVSTUPUJE do
+    oceňovacího vzorce. Ten dál používá jen zjednodušené 3 kategorie z
+    _stav() výše (cornerstone, beze změny)."""
+    nazev = _nazev(d.get("building_condition")).strip()
+    return nazev or None
+
+
 def _rok(d):
     for k in ("object_age", "acceptance_year"):
         v = d.get(k)
@@ -238,7 +249,7 @@ def import_detaily(limit: int = 500) -> int:
                 "vlastnictvi=?, anuita_stav=?, energeticky_stitek=?, patro=?, "
                 "pater_celkem=?, vytah=?, sklep=?, sklep_m2=?, zahrada_m2=?, "
                 "typ_stavby=?, datum_vlozeni=?, plocha_cista_m2=?, terasa_m2=?, "
-                "lodzie_m2=?, balkon_m2=?, postoupeni_stav=?, "
+                "lodzie_m2=?, balkon_m2=?, postoupeni_stav=?, stav_sreality=?, "
                 "detail_at=datetime('now') WHERE id=?",
                 (_stav(d), _rok(d), _balkon(d), _parkovani(d),
                  _vlastnictvi(d), _anuita_stav(d.get("advert_description")),
@@ -246,7 +257,8 @@ def import_detaily(limit: int = 500) -> int:
                  _sklep(d), _sklep_m2(d), _zahrada_m2(d), _typ_stavby(d),
                  _datum_vlozeni(d), _plocha_cista(d), _terasa_m2(d),
                  _lodzie_m2(d), _balkon_m2(d),
-                 _postoupeni_stav(d.get("advert_description")), r["id"]))
+                 _postoupeni_stav(d.get("advert_description")),
+                 _stav_sreality(d), r["id"]))
             n += 1
         except Exception as e:
             chyby += 1
