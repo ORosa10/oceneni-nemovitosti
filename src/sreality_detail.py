@@ -158,9 +158,26 @@ def _sklep_m2(d):
     return float(v) if isinstance(v, (int, float)) else None
 
 
-def _zahrada_m2(d):
+def _zahrada_m2(d, popis: str):
+    """Zahrada se do modelu započítá JEN když popis inzerátu obsahuje
+    "podíl" (spoluvlastnický podíl na zahradě/pozemku) — 2026-07-28,
+    na žádost uživatele, po zjištění konkrétního případu (byt Košíře,
+    Vrchlického, 4. patro paneláku): Sreality pole `garden_area` bylo
+    500 m², ale popis mluvil jen o "vlastní klidný vnitroblok domu" —
+    žádná zmínka o podílu. U bytu nad přízemím sloužil sdílený vnitroblok/
+    pozemek klidně 20–30 jednotkám, takže hodnota připsaná JEDNOMU bytu
+    byla absurdní (efektivní plocha 78→153 m², tržní hodnota skoro
+    dvojnásobná). Rozlišení: sdílená zahrada domu s výslovně napsaným
+    podílem (typicky menší domy) = reálná, ocenitelná hodnota; velký
+    nerozdělený vnitroblok/pozemek bez podílu = neoceňovat (váha 0).
+    Heuristika na klíčové slovo v popisu, ne jistota."""
     v = d.get("garden_area")
-    return float(v) if isinstance(v, (int, float)) else None
+    plocha = float(v) if isinstance(v, (int, float)) else None
+    if plocha is None:
+        return None
+    if not popis or not re.search(r"podíl", popis, re.I):
+        return None
+    return plocha
 
 
 def _typ_stavby(d):
@@ -254,7 +271,7 @@ def import_detaily(limit: int = 500) -> int:
                 (_stav(d), _rok(d), _balkon(d), _parkovani(d),
                  _vlastnictvi(d), _anuita_stav(d.get("advert_description")),
                  _energeticky_stitek(d), _patro(d), _pater_celkem(d), _vytah(d),
-                 _sklep(d), _sklep_m2(d), _zahrada_m2(d), _typ_stavby(d),
+                 _sklep(d), _sklep_m2(d), _zahrada_m2(d, d.get("advert_description")), _typ_stavby(d),
                  _datum_vlozeni(d), _plocha_cista(d), _terasa_m2(d),
                  _lodzie_m2(d), _balkon_m2(d),
                  _postoupeni_stav(d.get("advert_description")),
