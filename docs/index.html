@@ -170,7 +170,20 @@ async function boot(){
   renderChecklist('f-stitek', st.map(s=>({hodnota:s,popisek:s})));
   const stavSr=[...new Set(ALL.map(r=>r.stav_sreality).filter(Boolean))].sort();
   renderChecklist('f-stav-sreality', stavSr.map(s=>({hodnota:s,popisek:s})));
+  nastavDefaultniFiltry();
   render();
+}
+// Výchozí filtry (na žádost uživatele, 2026-07-30): vyloučit družstevní
+// vlastnictví, vyloučit nesplacenou anuitu, vyloučit atypickou dispozici.
+// Platí při prvním načtení appky i po "Zrušit filtry" — je to uživatelův
+// běžný výchozí pohled, ne appka bez jakéhokoli filtru. Kdykoliv jde
+// jednoduše přepnout zpátky (select na "nerozlišovat", zaškrtnout
+// "Atypický").
+function nastavDefaultniFiltry(){
+  document.getElementById('f-druzstevni-rezim').value = 'vyloucit';
+  document.getElementById('f-anuita-rezim').value = 'vyloucit';
+  const atyp = document.querySelector('#f-disp input[value="Atypický"]');
+  if (atyp) atyp.checked = false;
 }
 const num=id=>{const v=document.getElementById(id).value;return v===''?null:+v;};
 // Checklist filtr (na žádost uživatele, místo víceklikacího <select multiple>
@@ -194,6 +207,7 @@ function srt(k){if(sortKey===k)sortAsc=!sortAsc;else{sortKey=k;sortAsc=(k==='cen
 function reset(){
   document.querySelectorAll('aside select,aside input').forEach(e=>{if(e.type==='checkbox')e.checked=false;else e.value='';if(e.multiple)[...e.options].forEach(o=>o.selected=false)});
   document.querySelectorAll('.checklist input').forEach(i=>i.checked=true);
+  nastavDefaultniFiltry();
   render();
 }
 
