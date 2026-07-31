@@ -114,7 +114,7 @@ a{color:var(--acc)}
   <h2>Anuita</h2>
   <select id="f-anuita-rezim" title="Textová heuristika z popisu inzerátu (typicky se týká družstevních bytů), nemusí být 100% spolehlivá">
     <option value="">nerozlišovat</option>
-    <option value="vyloucit">vyloučit nesplacenou anuitu</option>
+    <option value="vyloucit">vyloučit nesplacenou/nejasnou anuitu</option>
     <option value="jen">⚠️ jen nesplacená anuita</option>
   </select>
   <h2>Postoupení (splátky developerovi)</h2>
@@ -229,7 +229,7 @@ function render(){
     (zobrSkryte||!r.skryto) && (!jenWatch||r.watchlist) &&
     (druzstevniRezim!=='vyloucit'||r.vlastnictvi!=='Družstevní') &&
     (druzstevniRezim!=='jen'||r.vlastnictvi==='Družstevní') &&
-    (anuitaRezim!=='vyloucit'||r.anuita_stav!=='nesplacena') &&
+    (anuitaRezim!=='vyloucit'||(r.anuita_stav!=='nesplacena'&&r.anuita_stav!=='neznamo')) &&
     (anuitaRezim!=='jen'||r.anuita_stav==='nesplacena') &&
     (postoupeniRezim!=='vyloucit'||r.postoupeni_stav!=='ano') &&
     (postoupeniRezim!=='jen'||r.postoupeni_stav==='ano') &&
