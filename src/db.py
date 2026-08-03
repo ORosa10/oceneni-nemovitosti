@@ -11,7 +11,7 @@ LISTING_SLOUPCE = [
     "source", "external_id", "url", "nazev", "dispozice", "ctvrt", "plocha_m2",
     "cena_czk", "zakladni_cena_m2", "lokalita", "stav", "rok_vystavby",
     "balkon", "parkovani", "dalsi_koef_pct", "najem_m2_mesic", "najem_priplatky_rocni",
-    "lokalita_auto", "lokalita_skore", "lokalita_detail",
+    "lokalita_auto", "lokalita_skore", "lokalita_detail", "kraj",
 ]
 
 
@@ -96,7 +96,15 @@ def migruj(con):
                 # 5000 obyvatel, viz scripts/stredocesky_cenova_mapa.py).
                 # kraj rozlišuje řádky cenové mapy, aby si regionální scrapery
                 # navzájem nepřepisovaly řádky (každý smí měnit jen svůj kraj).
-                "ALTER TABLE price_map ADD COLUMN kraj TEXT"):
+                "ALTER TABLE price_map ADD COLUMN kraj TEXT",
+                # listings.kraj (2026-08): ze kterého regionu import_sreality()
+                # nabídku stáhl (Praha/Středočeský/...). KRITICKÉ pro bezpečnost
+                # "deaktivace zmizelých nabídek" v import_sreality() — bez téhle
+                # informace by import jednoho kraje mohl omylem deaktivovat
+                # VŠECHNY nabídky jiného kraje (ty se logicky nemůžou objevit
+                # ve výsledcích vyhledávání jiného kraje, takže by vypadaly
+                # jako "zmizelé"). Viz src/sreality.py, import_sreality().
+                "ALTER TABLE listings ADD COLUMN kraj TEXT"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -109,7 +117,7 @@ CREATE TABLE IF NOT EXISTS listings (
     zakladni_cena_m2 REAL, lokalita TEXT, stav TEXT, rok_vystavby INTEGER,
     balkon TEXT DEFAULT 'Ne', parkovani TEXT DEFAULT 'Ne', dalsi_koef_pct REAL DEFAULT 0,
     najem_m2_mesic REAL, najem_priplatky_rocni REAL DEFAULT 0,
-    active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT,
+    active INTEGER DEFAULT 1, first_seen TEXT, last_seen TEXT, kraj TEXT,
     watchlist INTEGER DEFAULT 0, skryto INTEGER DEFAULT 0,
     vlastnictvi TEXT, anuita_stav TEXT,
     energeticky_stitek TEXT, patro INTEGER, pater_celkem INTEGER, vytah TEXT,

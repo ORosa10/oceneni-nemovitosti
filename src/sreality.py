@@ -72,6 +72,9 @@ REGIONY = {"praha": 10, "hlavni-mesto-praha": 10, "stredocesky-kraj": 11,
            "ustecky-kraj": 15, "liberecky-kraj": 16, "kralovehradecky-kraj": 17,
            "pardubicky-kraj": 18, "vysocina": 19, "jihomoravsky-kraj": 20,
            "olomoucky-kraj": 21, "zlinsky-kraj": 25, "moravskoslezsky-kraj": 24}
+# Zobrazovaný název kraje (uložený do listings.kraj a price_map.kraj) — jen
+# pro rozlišení regionů při importu/deaktivaci, viz import_sreality().
+REGION_NAZEV = {10: "Praha", 11: "Středočeský"}
 
 
 def _params_from_url(url: str) -> dict:
@@ -166,6 +169,8 @@ def _cena(r) -> float | None:
 
 def import_sreality(url: str, max_pages: int = 5) -> int:
     params = _params_from_url(url)
+    region_id = params.get("locality_region_id")
+    kraj = REGION_NAZEV.get(region_id, params.get("locality_region_id") and str(region_id))
     con = db.connect()
     db.migruj(con)
     pravidla, hranice = nacti_matici()
@@ -199,6 +204,7 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
                 "ctvrt": _ctvrt(e.get("locality")),
                 "plocha_m2": _plocha(nazev),
                 "cena_czk": cena,
+                "kraj": kraj,
                 # stav/rok/balkon/parkování doplní import-detaily
                 "lokalita_auto": kat,
                 "lokalita_skore": skore,
@@ -211,14 +217,22 @@ def import_sreality(url: str, max_pages: int = 5) -> int:
         time.sleep(1)  # šetrnost k API
     # Deaktivace zmizelých nabídek (schváleno 2026-07-06): jen když import prošel
     # celou nabídku (offset >= total) a viděl rozumný počet — pojistka proti výpadku API.
+    #
+    # KRITICKÉ (2026-08, rozšíření na Střední Čechy): musí se omezit na STEJNÝ
+    # kraj (WHERE kraj=:kraj) — bez toho by import jednoho kraje (třeba
+    # Středočeského) považoval VŠECHNY nabídky jiného kraje (Praha) za
+    # "zmizelé", protože se logicky nemůžou objevit ve výsledcích vyhledávání
+    # jiného kraje. Staré nabídky bez vyplněného kraje (import před tímhle
+    # datem) se do žádného scope nepočítají, dokud je import nedožene.
     aktivnich = con.execute(
-        "SELECT COUNT(*) FROM listings WHERE source='sreality' AND active=1").fetchone()[0]
+        "SELECT COUNT(*) FROM listings WHERE source='sreality' AND active=1 AND kraj=?",
+        (kraj,)).fetchone()[0]
     if total and offset >= total and len(videne) > 0.5 * max(aktivnich, 1):
         ph = ",".join("?" * len(videne))
         deakt = con.execute(
             f"UPDATE listings SET active=0 WHERE source='sreality' AND active=1 "
-            f"AND external_id NOT IN ({ph})", tuple(videne)).rowcount
-        print(f"Deaktivováno zmizelých nabídek: {deakt}")
+            f"AND kraj=? AND external_id NOT IN ({ph})", (kraj, *videne)).rowcount
+        print(f"Deaktivováno zmizelých nabídek ({kraj}): {deakt}")
     con.commit()
     con.close()
     print(f"Importováno {n} nabídek ze Sreality.")
