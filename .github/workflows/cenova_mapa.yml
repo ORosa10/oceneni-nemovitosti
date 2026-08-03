@@ -31,8 +31,11 @@ jobs:
       - name: Databáze (init, kdyby chyběla)
         run: python -m src.main init
 
-      - name: Stažení cenové mapy ze Sreality
+      - name: Stažení cenové mapy ze Sreality (Praha)
         run: python scripts/sreality_cenova_mapa.py
+
+      - name: Stažení cenové mapy ze Sreality (Střední Čechy, velká města >5000 obyv.)
+        run: python scripts/stredocesky_cenova_mapa.py
 
       - name: Nahrání cenové mapy do DB
         run: python -m src.main cenova-mapa

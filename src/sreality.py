@@ -96,9 +96,21 @@ def _params_from_url(url: str) -> dict:
 
 
 def _ctvrt(locality) -> str:
-    """Z lokality typu 'Štorkánova, Praha 5 - Smíchov' vytáhne 'Smíchov'."""
+    """Z lokality typu 'Štorkánova, Praha 5 - Smíchov' vytáhne 'Smíchov'.
+
+    Mimo Prahu (2026-08, rozšíření na Střední Čechy — viz
+    scripts/stredocesky_cenova_mapa.py) bereme rovnou pole `city` (např.
+    'Beroun'), NE `citypart`: cenová mapa mimo Prahu je kalibrovaná na
+    úrovni celé obce, ne jejích místních částí, a `citypart` tam bývá tvar
+    'Beroun-Závodí' (místní část obce) — kdyby se použila stejná logika
+    jako u Prahy (vzít citypart, rozdělit podle pomlčky), vytáhlo by to
+    'Závodí' místo 'Beroun' a nabídka by v cenové mapě nenašla shodu.
+    Ověřeno na reálném vzorku (Sreality API, kraj Středočeský)."""
     if isinstance(locality, dict):
-        locality = locality.get("citypart") or locality.get("city") or ""
+        city = str(locality.get("city") or "").strip()
+        if city and city != "Praha":
+            return city
+        locality = locality.get("citypart") or city or ""
     s = str(locality or "")
     if "-" in s:
         return s.rsplit("-", 1)[1].strip()

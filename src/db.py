@@ -90,7 +90,13 @@ def migruj(con):
                 "ALTER TABLE valuations ADD COLUMN v_plocha_jadro REAL",
                 "ALTER TABLE valuations ADD COLUMN v_plocha_vedlejsi_m2 REAL",
                 "ALTER TABLE valuations ADD COLUMN v_plocha_zahrada_m2 REAL",
-                "ALTER TABLE valuations ADD COLUMN v_plocha_efektivni REAL"):
+                "ALTER TABLE valuations ADD COLUMN v_plocha_efektivni REAL",
+                # Rozšíření mimo Prahu (2026-08, na žádost uživatele) — cenová
+                # mapa teď obsahuje i velká města Středočeského kraje (nad
+                # 5000 obyvatel, viz scripts/stredocesky_cenova_mapa.py).
+                # kraj rozlišuje řádky cenové mapy, aby si regionální scrapery
+                # navzájem nepřepisovaly řádky (každý smí měnit jen svůj kraj).
+                "ALTER TABLE price_map ADD COLUMN kraj TEXT"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -114,7 +120,7 @@ CREATE TABLE IF NOT EXISTS listings (
 );
 CREATE TABLE IF NOT EXISTS price_map (
     klic TEXT PRIMARY KEY, ctvrt TEXT NOT NULL, cena_za_m2_czk REAL NOT NULL,
-    pocet_transakci INTEGER, najem_m2_mesic REAL, updated_at TEXT
+    pocet_transakci INTEGER, najem_m2_mesic REAL, kraj TEXT, updated_at TEXT
 );
 CREATE TABLE IF NOT EXISTS valuations (
     listing_id INTEGER PRIMARY KEY REFERENCES listings(id),
@@ -153,18 +159,23 @@ def load_price_map():
         con.execute("ALTER TABLE price_map ADD COLUMN najem_m2_mesic REAL")
     except sqlite3.OperationalError:
         pass  # sloupec už existuje
+    try:
+        con.execute("ALTER TABLE price_map ADD COLUMN kraj TEXT")
+    except sqlite3.OperationalError:
+        pass  # sloupec už existuje
     now = datetime.now().isoformat(timespec="seconds")
     n = 0
     with open(PRICE_MAP_CSV, encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             con.execute(
-                "INSERT INTO price_map (klic, ctvrt, cena_za_m2_czk, pocet_transakci, najem_m2_mesic, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(klic) DO UPDATE SET ctvrt=excluded.ctvrt, "
+                "INSERT INTO price_map (klic, ctvrt, cena_za_m2_czk, pocet_transakci, najem_m2_mesic, kraj, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(klic) DO UPDATE SET ctvrt=excluded.ctvrt, "
                 "cena_za_m2_czk=excluded.cena_za_m2_czk, pocet_transakci=excluded.pocet_transakci, "
-                "najem_m2_mesic=excluded.najem_m2_mesic, updated_at=excluded.updated_at",
+                "najem_m2_mesic=excluded.najem_m2_mesic, kraj=excluded.kraj, updated_at=excluded.updated_at",
                 (row["klic"].strip(), row["ctvrt"].strip(),
                  float(row["cena_za_m2_czk"]), int(row.get("pocet_transakci") or 0),
-                 float(row["najem_m2_mesic"]) if row.get("najem_m2_mesic") else None, now))
+                 float(row["najem_m2_mesic"]) if row.get("najem_m2_mesic") else None,
+                 (row.get("kraj") or "Praha").strip(), now))
             n += 1
     con.commit()
     con.close()

@@ -13,6 +13,11 @@
 # POZOR: sloupec najem_m2_mesic v price_map.csv NENÍ ze Sreality (ta ho
 # neposkytuje) — dopočítá se jinde (zatím jen Radlice, Dejvice) a tento
 # skript ho NIKDY nepřepisuje, jen ho beze změny přenese ze stávajícího CSV.
+#
+# Sloupec kraj (2026-08, na žádost uživatele — rozšíření na Střední Čechy,
+# viz scripts/stredocesky_cenova_mapa.py): tenhle skript smí přepisovat JEN
+# řádky s kraj="Praha" — řádky ostatních krajů v CSV zůstávají beze změny,
+# aby si regionální scrapery navzájem nepřepisovaly data při každém běhu.
 import csv
 import json
 import re
@@ -23,6 +28,7 @@ import requests
 URL = "https://www.sreality.cz/cenova-mapa/hledani/byty/hlavni-mesto-praha-10"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
 CSV_PATH = "data/price_map.csv"
+FIELDNAMES = ["klic", "ctvrt", "cena_za_m2_czk", "pocet_transakci", "najem_m2_mesic", "kraj"]
 
 
 def _norm(s):
@@ -42,6 +48,20 @@ def nacti_stavajici_najmy():
     return najmy
 
 
+def nacti_ostatni_kraje():
+    """Řádky jiných krajů (ne Praha) ze stávajícího CSV — zachováme beze
+    změny, tenhle skript se stará jen o Prahu."""
+    ostatni = []
+    try:
+        with open(CSV_PATH, encoding="utf-8-sig") as f:
+            for row in csv.DictReader(f):
+                if (row.get("kraj") or "Praha").strip() != "Praha":
+                    ostatni.append(row)
+    except FileNotFoundError:
+        pass
+    return ostatni
+
+
 def stahni_ctvrti():
     r = requests.get(URL, headers=HEADERS, timeout=30)
     r.raise_for_status()
@@ -59,6 +79,7 @@ def stahni_ctvrti():
 def aktualizuj():
     ctvrti = stahni_ctvrti()
     najmy = nacti_stavajici_najmy()
+    ostatni = nacti_ostatni_kraje()
     radky = []
     for a in sorted(ctvrti, key=lambda a: -a["avgPricePerSqm"]):
         nazev = a["locality"]["name"]
@@ -69,12 +90,15 @@ def aktualizuj():
             "cena_za_m2_czk": int(a["avgPricePerSqm"]),
             "pocet_transakci": int(a["numTransactions"]),
             "najem_m2_mesic": najmy.get(klic, ""),
+            "kraj": "Praha",
         })
+    radky.extend(ostatni)
     with open(CSV_PATH, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["klic", "ctvrt", "cena_za_m2_czk", "pocet_transakci", "najem_m2_mesic"])
+        w = csv.DictWriter(f, fieldnames=FIELDNAMES)
         w.writeheader()
         w.writerows(radky)
-    print(f"Aktualizováno {len(radky)} čtvrtí v {CSV_PATH} ze Sreality ({URL}).")
+    print(f"Aktualizováno {len(radky) - len(ostatni)} čtvrtí (Praha) v {CSV_PATH} ze Sreality ({URL}), "
+          f"zachováno {len(ostatni)} řádků jiných krajů.")
 
 
 if __name__ == "__main__":
