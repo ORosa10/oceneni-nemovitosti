@@ -63,13 +63,37 @@ tr.skryta{opacity:.45}
 a{color:var(--acc)}
 .empty{color:var(--mut);padding:40px;text-align:center}
 @media(max-width:800px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
+#landing{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.landing-wrap{text-align:center}
+.landing-wrap h1{font-size:24px;margin-bottom:8px}
+.landing-wrap .sub{margin-bottom:30px}
+.karty{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+a.karta{width:220px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 20px;text-decoration:none;color:var(--tx);transition:border-color .15s,transform .15s;display:block}
+a.karta:hover{border-color:var(--acc);transform:translateY(-2px)}
+a.karta .ico{font-size:32px;margin-bottom:10px;display:block}
+a.karta h2{font-size:17px;margin-bottom:8px}
+a.karta .pocty{color:var(--mut);font-size:12px}
+#gen-landing{margin-top:24px;color:var(--mut);font-size:11px}
 </style>
 </head>
 <body>
+<div id="landing" style="display:none">
+  <div class="landing-wrap">
+    <h1>🏠 Ocenění nemovitostí</h1>
+    <div class="sub">tržní hodnota dle tvého modelu · peer group · podhodnocené příležitosti<br>vyber kraj</div>
+    <div class="karty">
+      <a class="karta" href="?kraj=praha"><span class="ico">🏙️</span><h2>Praha</h2><div class="pocty" id="p-praha">načítám…</div></a>
+      <a class="karta" href="?kraj=stredocesky"><span class="ico">🌳</span><h2>Střední Čechy</h2><div class="pocty" id="p-stredocesky">načítám…</div></a>
+    </div>
+    <div id="gen-landing"></div>
+  </div>
+</div>
+<div id="app" style="display:none">
 <header>
-  <h1>🏠 Ocenění nemovitostí</h1>
+  <h1>🏠 Ocenění nemovitostí <span id="nazev-kraje" style="color:var(--acc)"></span></h1>
   <div class="sub">tržní hodnota dle tvého modelu · peer group · podhodnocené příležitosti</div>
   <div class="sub" id="gen"></div>
+  <a href="?" class="sub" style="margin-left:auto">⇄ vybrat jiný kraj</a>
 </header>
 <main>
 <aside>
@@ -139,6 +163,7 @@ a{color:var(--acc)}
   </table>
 </section>
 </main>
+</div>
 <script>
 let ALL=[], MAPA={}, view=[], sortKey='sleva_pct', sortAsc=false;
 const fmt=n=>n==null?'–':Math.round(n).toLocaleString('cs-CZ');
@@ -158,10 +183,25 @@ function prepni(ev,id,pole,hodnota){
   otevriIssue(id,{[pole]:hodnota});
 }
 
+// Praha a Střední Čechy jsou od 2026-08 oddělené (na žádost uživatele):
+// bez ?kraj= parametru se zobrazí výběrová stránka (landing), s parametrem
+// se appka (filtry/tabulka) omezí jen na nabídky daného kraje — jak
+// v datech (ALL, MAPA), tak v checklist filtrech (Čtvrť atd.), protože
+// Praha a Střední Čechy mají úplně jiné čtvrti/obce.
+const KRAJ_PARAM={praha:'Praha', stredocesky:'Středočeský'};
+let AKTIVNI_KRAJ=null;
 async function boot(){
   const d=await (await fetch('data.json')).json();
-  ALL=d.listings; d.price_map.forEach(p=>MAPA[p.ctvrt]=p);
+  const krajParam=new URLSearchParams(location.search).get('kraj');
+  AKTIVNI_KRAJ=KRAJ_PARAM[krajParam]||null;
+  if(!AKTIVNI_KRAJ){ukazLanding(d);return;}
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').style.display='';
+  document.title='Ocenění nemovitostí — '+AKTIVNI_KRAJ;
+  ALL=d.listings.filter(r=>r.kraj===AKTIVNI_KRAJ);
+  d.price_map.filter(p=>p.kraj===AKTIVNI_KRAJ).forEach(p=>MAPA[p.ctvrt]=p);
   document.getElementById('gen').textContent='data: '+(d.generated||'').replace('T',' ');
+  document.getElementById('nazev-kraje').textContent='— '+AKTIVNI_KRAJ;
   const cts={}; ALL.forEach(r=>{if(r.ctvrt)cts[r.ctvrt]=(cts[r.ctvrt]||0)+1});
   renderChecklist('f-ctvrt', Object.keys(cts).sort().map(c=>({hodnota:c,popisek:`${c} (${cts[c]})`})));
   const ds=[...new Set(ALL.map(r=>r.dispozice).filter(Boolean))].sort();
@@ -172,6 +212,19 @@ async function boot(){
   renderChecklist('f-stav-sreality', stavSr.map(s=>({hodnota:s,popisek:s})));
   nastavDefaultniFiltry();
   render();
+}
+// Výběrová stránka (Praha / Střední Čechy) s živými počty z data.json.
+function ukazLanding(d){
+  document.getElementById('app').style.display='none';
+  document.getElementById('landing').style.display='';
+  document.getElementById('gen-landing').textContent='data: '+(d.generated||'').replace('T',' ');
+  const shrn=kraj=>{
+    const l=d.listings.filter(r=>r.kraj===kraj);
+    const pril=l.filter(r=>r.sleva_pct!=null&&r.sleva_pct>=10).length;
+    return `${l.length} nabídek · ${pril} příležitostí (sleva ≥ 10 %)`;
+  };
+  document.getElementById('p-praha').textContent=shrn('Praha');
+  document.getElementById('p-stredocesky').textContent=shrn('Středočeský');
 }
 // Výchozí filtry (na žádost uživatele, 2026-07-30): vyloučit družstevní
 // vlastnictví, vyloučit nesplacenou anuitu, vyloučit atypickou dispozici.
