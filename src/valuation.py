@@ -35,27 +35,31 @@ VEK_PASMA = [(0, 10.0), (10, 5.0), (20, 0.0), (30, -3.0), (40, -6.0),
              (50, -8.0), (60, -10.0), (70, -11.0), (80, -12.0), (90, -12.0)]
 
 PARKOVANI_KC = 400000    # BM5 — příplatek parkování/garáž (Kč, absolutně)
-# ^ STŘEDNÍ ČECHY: beze změny, žádná reálná tržní data k dispozici (viz níže).
-#   PRAHA: nahrazeno typově+lokalitně rozlišeným příplatkem (viz dál) —
-#   PARKOVANI_KC se pro Prahu použije jen jako záložní hodnota, kdyby
-#   `typ_parkovani` chybělo (starší záznam bez tohoto pole).
+# ^ Záložní hodnota, kdyby kraj nebo `typ_parkovani` chyběly (viz níže) —
+#   od 2026-08-04 nahrazeno typově+lokalitně rozlišeným příplatkem pro
+#   Prahu i Střední Čechy (PARKOVANI_ZAKLAD_KRAJ).
 
-# Typově rozlišený příplatek parkování — JEN PRAHA (schváleno uživatelem
-# 2026-08-04). Zjištěno reálným trhem na Sreality (2026-08-04, aktuální
-# prodejní nabídky garáží/garážových stání v Praze, viz PREDAVACI.md):
-# samostatná garáž medián ~990k Kč (n=86), garážové stání medián ~710k Kč
-# (n=67) — zaokrouhleno na kulatá čísla dle uživatele. Venkovní stání
-# Sreality jako kategorii nemá, žádná tržní data k dispozici — hodnota je
-# uživatelův odhad, ne zjištěná z trhu.
-GARAZ_KC = 1_000_000
-STANI_KC = 750_000
-VENKOVNI_KC = 500_000
+# Typově rozlišený příplatek parkování — schváleno uživatelem, zjištěno
+# reálným trhem na Sreality (aktuální prodejní nabídky garáží/garážových
+# stání), viz PREDAVACI.md:
+#   Praha (2026-08-04): garáž medián ~990k Kč (n=86), stání medián ~710k Kč
+#     (n=67) — zaokrouhleno na kulatá čísla.
+#   Střední Čechy (2026-08-04): garáž medián ~699k Kč (n=55), stání medián
+#     ~395k Kč (n=JEN 10 — malý vzorek, uživatel schválil zaokrouhlené 450k
+#     přesto). Venkovní stání Sreality jako kategorii NEMÁ ani v jednom
+#     kraji, žádná tržní data k dispozici — hodnota je uživatelův odhad
+#     (Praha 500k dle uživatele; Střední Čechy 300k, taky uživatelovo číslo).
+PARKOVANI_ZAKLAD_KRAJ = {
+    "Praha": {"Garáž": 1_000_000, "Stání": 750_000, "Venkovní": 500_000},
+    "Středočeský": {"Garáž": 700_000, "Stání": 450_000, "Venkovní": 300_000},
+}
 
-# Lokalitní koeficient příplatku parkování — JEN PRAHA (schváleno uživatelem
-# 2026-08-04): parkování v drahé čtvrti (např. Dejvice) stojí víc než v
-# levné, ale ne neomezeně — koeficient = cena_mapy dané čtvrti / průměrná
-# cena_mapy Prahy, OMEZENO na rozsah <0,8; 1,2>. Střední Čechy koeficient
-# nemají (zůstávají na 1,0), dokud uživatel neschválí totéž.
+# Lokalitní koeficient příplatku parkování (schváleno uživatelem 2026-08-04,
+# stejně pro oba kraje): parkování v drahé čtvrti/městě (např. Dejvice,
+# Černošice) stojí víc než v levné (např. Roztoky), ale ne neomezeně —
+# koeficient = cena_mapy dané čtvrti/města / průměrná cena_mapy kraje,
+# OMEZENO na rozsah <0,8; 1,2>. Kraje mimo PARKOVANI_ZAKLAD_KRAJ koeficient
+# nemají (zůstávají na 1,0).
 PARKOVANI_LOKALITA_MIN = 0.8
 PARKOVANI_LOKALITA_MAX = 1.2
 
@@ -225,25 +229,26 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None, prumer_cena_m2_kraj=None):
     vek_pouzity = min(max(ROK_OCENENI - l["rok_vystavby"], 0), 80) if l.get("rok_vystavby") else None
     k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
 
-    # Příplatek parkování (P/Q) — typově+lokalitně rozlišený jen pro Prahu,
-    # viz GARAZ_KC/STANI_KC/VENKOVNI_KC výše. Střední Čechy: beze změny,
-    # fixní PARKOVANI_KC, koeficient lokality 1,0 (žádná tržní data).
+    # Příplatek parkování (P/Q) — typově+lokalitně rozlišený pro kraje v
+    # PARKOVANI_ZAKLAD_KRAJ (Praha, Střední Čechy), jinde fixní PARKOVANI_KC
+    # a koeficient lokality 1,0 (žádná tržní data).
     park = (l.get("parkovani") or "Ne").strip().lower()
     pocet_parkovani = 1 if park == "ano" else (0 if park == "ne" else 2)
     kraj = l.get("kraj")
-    # cena_mapy dané čtvrti — použije se i když je zadaná zakladni_cena_m2
-    # ručně (cena_mapy výše by v tom případě byla None), čistě pro lokalitní
-    # koeficient parkování, nemění se tím základní cena/m2 bytu.
+    # cena_mapy dané čtvrti/města — použije se i když je zadaná
+    # zakladni_cena_m2 ručně (cena_mapy výše by v tom případě byla None),
+    # čistě pro lokalitní koeficient parkování, nemění se tím základní
+    # cena/m2 bytu.
     cena_mapy_ctvrt = cena_mapy if cena_mapy is not None else mapa.get(_norm(l.get("ctvrt") or ""))
     typ_park = None
     koef_lok_park = 1.0
-    if kraj == "Praha":
+    zaklady_kraj = PARKOVANI_ZAKLAD_KRAJ.get(kraj)
+    if zaklady_kraj:
         typ_park = l.get("typ_parkovani")
-        zaklad_park = {"Garáž": GARAZ_KC, "Stání": STANI_KC,
-                       "Venkovní": VENKOVNI_KC}.get(typ_park, PARKOVANI_KC)
-        prumer_praha = (prumer_cena_m2_kraj or {}).get("Praha")
-        if cena_mapy_ctvrt and prumer_praha:
-            koef_lok_park = min(max(cena_mapy_ctvrt / prumer_praha,
+        zaklad_park = zaklady_kraj.get(typ_park, PARKOVANI_KC)
+        prumer_kraj = (prumer_cena_m2_kraj or {}).get(kraj)
+        if cena_mapy_ctvrt and prumer_kraj:
+            koef_lok_park = min(max(cena_mapy_ctvrt / prumer_kraj,
                                      PARKOVANI_LOKALITA_MIN), PARKOVANI_LOKALITA_MAX)
     else:
         zaklad_park = PARKOVANI_KC
@@ -281,7 +286,7 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None, prumer_cena_m2_kraj=None):
         "v_koef_vek_pct": round(k_vek, 2),
         "v_koef_dalsi_pct": k_dalsi, "v_vek_pouzity": vek_pouzity,
         "v_typ_parkovani": typ_park if pocet_parkovani else None,
-        "v_koef_lokalita_parkovani": round(koef_lok_park, 3) if pocet_parkovani and kraj == "Praha" else None,
+        "v_koef_lokalita_parkovani": round(koef_lok_park, 3) if pocet_parkovani and zaklady_kraj else None,
     }
 
     # Nájem a výnos (AA–AL) — ruční nájemné má přednost, jinak MFČR (čtvrť + dispozice)

@@ -327,15 +327,17 @@ def doplnit_typ_parkovani(limit: int = 2000) -> int:
     """Jednorázový/dobíhací backfill `typ_parkovani` (2026-08-04) u nabídek,
     které měly detail stažený PŘED zavedením tohoto pole — běžný
     import_detaily() se řídí `detail_at IS NULL`, takže by je normálně
-    nikdy znovu nenavštívil. Jen Praha (viz valuation.py). Aktualizuje
-    VÝHRADNĚ typ_parkovani, nic jiného nepřepisuje.
-    Prvotní backfill (2026-08-04, 1742 nabídek) proveden jednorázově
-    manuálně mimo tuto funkci — viz PREDAVACI.md; tahle funkce je pro
-    budoucí dohnání (např. nové nabídky importované mezitím)."""
+    nikdy znovu nenavštívil. Praha i Střední Čechy (viz valuation.py,
+    PARKOVANI_ZAKLAD_KRAJ) — u ostatních krajů se pole nepoužívá, ale
+    nevadí je mít vyplněné. Aktualizuje VÝHRADNĚ typ_parkovani, nic
+    jiného nepřepisuje.
+    Prvotní backfill (2026-08-04: 1742 Praha, 341 Střední Čechy) proveden
+    jednorázově manuálně mimo tuto funkci — viz PREDAVACI.md; tahle funkce
+    je pro budoucí dohnání (např. nové nabídky importované mezitím)."""
     con = db.connect()
     radky = con.execute(
         "SELECT id, external_id FROM listings WHERE source='sreality' "
-        "AND active=1 AND kraj='Praha' AND parkovani IN ('Ano', 'Ano 2*') "
+        "AND active=1 AND parkovani IN ('Ano', 'Ano 2*') "
         "AND typ_parkovani IS NULL AND detail_at IS NOT NULL LIMIT ?", (limit,)).fetchall()
     n, chyby = 0, 0
     for r in radky:
