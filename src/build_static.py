@@ -22,7 +22,7 @@ def dump_data() -> dict:
                   v.v_zakladni_rucne, v.v_koef_lokalita_pct, v.v_koef_stav_pct,
                   v.v_koef_vek_pct, v.v_koef_dalsi_pct, v.v_vek_pouzity,
                   v.v_plocha_jadro, v.v_plocha_vedlejsi_m2, v.v_plocha_zahrada_m2,
-                  v.v_plocha_efektivni
+                  v.v_plocha_efektivni, v.v_typ_parkovani, v.v_koef_lokalita_parkovani
            FROM listings l LEFT JOIN valuations v ON v.listing_id = l.id
            WHERE l.active = 1""")]
     price_map = [dict(r) for r in con.execute("SELECT * FROM price_map")]

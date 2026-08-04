@@ -35,6 +35,29 @@ VEK_PASMA = [(0, 10.0), (10, 5.0), (20, 0.0), (30, -3.0), (40, -6.0),
              (50, -8.0), (60, -10.0), (70, -11.0), (80, -12.0), (90, -12.0)]
 
 PARKOVANI_KC = 400000    # BM5 — příplatek parkování/garáž (Kč, absolutně)
+# ^ STŘEDNÍ ČECHY: beze změny, žádná reálná tržní data k dispozici (viz níže).
+#   PRAHA: nahrazeno typově+lokalitně rozlišeným příplatkem (viz dál) —
+#   PARKOVANI_KC se pro Prahu použije jen jako záložní hodnota, kdyby
+#   `typ_parkovani` chybělo (starší záznam bez tohoto pole).
+
+# Typově rozlišený příplatek parkování — JEN PRAHA (schváleno uživatelem
+# 2026-08-04). Zjištěno reálným trhem na Sreality (2026-08-04, aktuální
+# prodejní nabídky garáží/garážových stání v Praze, viz PREDAVACI.md):
+# samostatná garáž medián ~990k Kč (n=86), garážové stání medián ~710k Kč
+# (n=67) — zaokrouhleno na kulatá čísla dle uživatele. Venkovní stání
+# Sreality jako kategorii nemá, žádná tržní data k dispozici — hodnota je
+# uživatelův odhad, ne zjištěná z trhu.
+GARAZ_KC = 1_000_000
+STANI_KC = 750_000
+VENKOVNI_KC = 500_000
+
+# Lokalitní koeficient příplatku parkování — JEN PRAHA (schváleno uživatelem
+# 2026-08-04): parkování v drahé čtvrti (např. Dejvice) stojí víc než v
+# levné, ale ne neomezeně — koeficient = cena_mapy dané čtvrti / průměrná
+# cena_mapy Prahy, OMEZENO na rozsah <0,8; 1,2>. Střední Čechy koeficient
+# nemají (zůstávají na 1,0), dokud uživatel neschválí totéž.
+PARKOVANI_LOKALITA_MIN = 0.8
+PARKOVANI_LOKALITA_MAX = 1.2
 
 # Vedlejší plochy — terasa/lodžie/balkon/zahrada (schváleno uživatelem
 # 2026-07-27, viz PREDAVACI.md). NAHRAZUJE původní plochý bonus BALKON_PCT
@@ -169,9 +192,11 @@ def _skupina_dispozice(dispozice):
     return _SKUPINY[min(int(m.group(1)), 4) - 1]
 
 
-def ocenit_nabidku(l, mapa, najemne_mfcr=None):
+def ocenit_nabidku(l, mapa, najemne_mfcr=None, prumer_cena_m2_kraj=None):
     """Ocení jednu nabídku dle modelu. `mapa` = {klic: cena_za_m2} z price_map,
-    `najemne_mfcr` = tabulka MFČR {čtvrť: {skupina: Kč/m²}} (viz nacti_najemne_mfcr)."""
+    `najemne_mfcr` = tabulka MFČR {čtvrť: {skupina: Kč/m²}} (viz nacti_najemne_mfcr),
+    `prumer_cena_m2_kraj` = {kraj: průměrná cena_za_m2_czk z price_map} — pro
+    lokalitní koeficient příplatku parkování (jen Praha, viz níže)."""
     plocha_uzitna, cena = l.get("plocha_m2"), l.get("cena_czk")
     if not plocha_uzitna or not cena:
         return None
@@ -199,8 +224,30 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
     k_stav = STAV.get((l.get("stav") or "").strip().lower(), 0.0)             # J×100
     vek_pouzity = min(max(ROK_OCENENI - l["rok_vystavby"], 0), 80) if l.get("rok_vystavby") else None
     k_vek = koef_vek(ROK_OCENENI - l["rok_vystavby"]) if l.get("rok_vystavby") else 0.0  # M
-    park = (l.get("parkovani") or "Ne").strip().lower()                       # P/Q
-    priplatky = PARKOVANI_KC if park == "ano" else (0 if park == "ne" else 2 * PARKOVANI_KC)
+
+    # Příplatek parkování (P/Q) — typově+lokalitně rozlišený jen pro Prahu,
+    # viz GARAZ_KC/STANI_KC/VENKOVNI_KC výše. Střední Čechy: beze změny,
+    # fixní PARKOVANI_KC, koeficient lokality 1,0 (žádná tržní data).
+    park = (l.get("parkovani") or "Ne").strip().lower()
+    pocet_parkovani = 1 if park == "ano" else (0 if park == "ne" else 2)
+    kraj = l.get("kraj")
+    # cena_mapy dané čtvrti — použije se i když je zadaná zakladni_cena_m2
+    # ručně (cena_mapy výše by v tom případě byla None), čistě pro lokalitní
+    # koeficient parkování, nemění se tím základní cena/m2 bytu.
+    cena_mapy_ctvrt = cena_mapy if cena_mapy is not None else mapa.get(_norm(l.get("ctvrt") or ""))
+    typ_park = None
+    koef_lok_park = 1.0
+    if kraj == "Praha":
+        typ_park = l.get("typ_parkovani")
+        zaklad_park = {"Garáž": GARAZ_KC, "Stání": STANI_KC,
+                       "Venkovní": VENKOVNI_KC}.get(typ_park, PARKOVANI_KC)
+        prumer_praha = (prumer_cena_m2_kraj or {}).get("Praha")
+        if cena_mapy_ctvrt and prumer_praha:
+            koef_lok_park = min(max(cena_mapy_ctvrt / prumer_praha,
+                                     PARKOVANI_LOKALITA_MIN), PARKOVANI_LOKALITA_MAX)
+    else:
+        zaklad_park = PARKOVANI_KC
+    priplatky = round(pocet_parkovani * zaklad_park * koef_lok_park)
     k_dalsi = float(l.get("dalsi_koef_pct") or 0.0)                           # R
 
     # S, T, U, X — přesně dle sheetu (koeficient balkonu nahrazen efektivní
@@ -233,6 +280,8 @@ def ocenit_nabidku(l, mapa, najemne_mfcr=None):
         "v_koef_lokalita_pct": k_lok, "v_koef_stav_pct": k_stav,
         "v_koef_vek_pct": round(k_vek, 2),
         "v_koef_dalsi_pct": k_dalsi, "v_vek_pouzity": vek_pouzity,
+        "v_typ_parkovani": typ_park if pocet_parkovani else None,
+        "v_koef_lokalita_parkovani": round(koef_lok_park, 3) if pocet_parkovani and kraj == "Praha" else None,
     }
 
     # Nájem a výnos (AA–AL) — ruční nájemné má přednost, jinak MFČR (čtvrť + dispozice)
@@ -276,12 +325,21 @@ def ocenit_vse():
     pm = [dict(r) for r in con.execute("SELECT * FROM price_map")]
     mapa = {_norm(r["klic"]): r["cena_za_m2_czk"] for r in pm}
     mapa.update({_norm(r["ctvrt"]): r["cena_za_m2_czk"] for r in pm})
+    # Průměrná cena_za_m2_czk za kraj (2026-08-04) — pro lokalitní koeficient
+    # příplatku parkování (jen Praha, viz GARAZ_KC/STANI_KC/VENKOVNI_KC výše).
+    # Prostý (nevážený) průměr přes čtvrti cenové mapy.
+    prumer_cena_m2_kraj = {}
+    for kraj_nazev in {r.get("kraj") for r in pm if r.get("kraj")}:
+        hodnoty = [r["cena_za_m2_czk"] for r in pm
+                   if r.get("kraj") == kraj_nazev and r.get("cena_za_m2_czk")]
+        if hodnoty:
+            prumer_cena_m2_kraj[kraj_nazev] = sum(hodnoty) / len(hodnoty)
     najemne_mfcr = nacti_najemne_mfcr()
     now = datetime.now().isoformat(timespec="seconds")
     n, bez_mapy, deaktivovano = 0, set(), 0
     for l in con.execute("SELECT * FROM listings WHERE active=1"):
         l = dict(l)
-        v = ocenit_nabidku(l, mapa, najemne_mfcr)
+        v = ocenit_nabidku(l, mapa, najemne_mfcr, prumer_cena_m2_kraj)
         if v is None:
             ma_cenu_a_plochu = bool(l.get("plocha_m2") and l.get("cena_czk"))
             nema_mapu = (not l.get("zakladni_cena_m2") and l.get("ctvrt")

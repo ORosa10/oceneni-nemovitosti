@@ -117,6 +117,38 @@ def _parkovani(d):
     return "Ne"
 
 
+# Typ parkování — Garáž / Stání / Venkovní (2026-08-04, na žádost uživatele,
+# JEN PRAHA — viz valuation.py a PREDAVACI.md). Zjištěno reálným trhem
+# Sreality (2026-08-04, prodej garáží/garážových stání v Praze): samostatná
+# garáž medián ~990k Kč, garážové stání medián ~710k Kč — výrazně jiná
+# hodnota, dosavadní jediné PARKOVANI_KC to nerozlišovalo.
+# Priorita rozlišení:
+#   1. Garáž — spolehlivé strukturované pole Sreality (`garage`/`garage_count`).
+#   2. Venkovní — Sreality to jako vlastní pole NEMÁ, jen textová heuristika
+#      v popisu inzerátu (klíčová slova "venkovní stání/parkování",
+#      "nekryté stání", "otevřené (parkovací) stání") — MÉNĚ jistá než
+#      Garáž, ale bez ní bychom venkovní stání nedokázali rozlišit vůbec.
+#   3. Stání (výchozí) — je nějaké parkovací místo (`parking`/`parking_lots`),
+#      ale není to garáž a text nepotvrzuje venkovní — "garážové stání" je
+#      v inzerátech běžnější formulace než venkovní, proto výchozí.
+#   4. None — žádné parkování.
+VENKOVNI_STANI_VZORY = (
+    r"venkovní\s*(?:parkovací\s*)?stání", r"venkovní\s*parkování",
+    r"nekryté\s*stání", r"otevřené\s*(?:parkovací\s*)?stání",
+)
+
+
+def _typ_parkovani(d, popis: str):
+    if d.get("garage") or (isinstance(d.get("garage_count"), (int, float)) and d.get("garage_count")):
+        return "Garáž"
+    ma_stani = d.get("parking_lots") or (isinstance(d.get("parking"), (int, float)) and d.get("parking"))
+    if not ma_stani:
+        return None
+    if popis and any(re.search(v, popis, re.I) for v in VENKOVNI_STANI_VZORY):
+        return "Venkovní"
+    return "Stání"
+
+
 def _vlastnictvi(d):
     nazev = _nazev(d.get("ownership")).strip()
     return nazev or None
@@ -267,7 +299,7 @@ def import_detaily(limit: int = 500) -> int:
                 "pater_celkem=?, vytah=?, sklep=?, sklep_m2=?, zahrada_m2=?, "
                 "typ_stavby=?, datum_vlozeni=?, plocha_cista_m2=?, terasa_m2=?, "
                 "lodzie_m2=?, balkon_m2=?, postoupeni_stav=?, stav_sreality=?, "
-                "detail_at=datetime('now') WHERE id=?",
+                "typ_parkovani=?, detail_at=datetime('now') WHERE id=?",
                 (_stav(d), _rok(d), _balkon(d), _parkovani(d),
                  _vlastnictvi(d), _anuita_stav(d.get("advert_description")),
                  _energeticky_stitek(d), _patro(d), _pater_celkem(d), _vytah(d),
@@ -275,7 +307,7 @@ def import_detaily(limit: int = 500) -> int:
                  _datum_vlozeni(d), _plocha_cista(d), _terasa_m2(d),
                  _lodzie_m2(d), _balkon_m2(d),
                  _postoupeni_stav(d.get("advert_description")),
-                 _stav_sreality(d), r["id"]))
+                 _stav_sreality(d), _typ_parkovani(d, d.get("advert_description")), r["id"]))
             n += 1
         except Exception as e:
             chyby += 1
@@ -288,4 +320,41 @@ def import_detaily(limit: int = 500) -> int:
     con.commit()
     con.close()
     print(f"Detaily dotaženy: {n} nabídek (chyb: {chyby}).")
+    return n
+
+
+def doplnit_typ_parkovani(limit: int = 2000) -> int:
+    """Jednorázový/dobíhací backfill `typ_parkovani` (2026-08-04) u nabídek,
+    které měly detail stažený PŘED zavedením tohoto pole — běžný
+    import_detaily() se řídí `detail_at IS NULL`, takže by je normálně
+    nikdy znovu nenavštívil. Jen Praha (viz valuation.py). Aktualizuje
+    VÝHRADNĚ typ_parkovani, nic jiného nepřepisuje.
+    Prvotní backfill (2026-08-04, 1742 nabídek) proveden jednorázově
+    manuálně mimo tuto funkci — viz PREDAVACI.md; tahle funkce je pro
+    budoucí dohnání (např. nové nabídky importované mezitím)."""
+    con = db.connect()
+    radky = con.execute(
+        "SELECT id, external_id FROM listings WHERE source='sreality' "
+        "AND active=1 AND kraj='Praha' AND parkovani IN ('Ano', 'Ano 2*') "
+        "AND typ_parkovani IS NULL AND detail_at IS NOT NULL LIMIT ?", (limit,)).fetchall()
+    n, chyby = 0, 0
+    for r in radky:
+        try:
+            resp = requests.get(API.format(r["external_id"]), headers=HEADERS, timeout=30)
+            resp.raise_for_status()
+            d = resp.json().get("result", {})
+            con.execute("UPDATE listings SET typ_parkovani=? WHERE id=?",
+                        (_typ_parkovani(d, d.get("advert_description")), r["id"]))
+            n += 1
+        except Exception as e:
+            chyby += 1
+            if chyby <= 3:
+                print(f"chyba u {r['external_id']}: {e}")
+            if chyby > 20:
+                print("příliš mnoho chyb, končím")
+                break
+        time.sleep(0.25)
+    con.commit()
+    con.close()
+    print(f"Doplněn typ_parkovani: {n} nabídek (chyb: {chyby}).")
     return n

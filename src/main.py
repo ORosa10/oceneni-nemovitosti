@@ -22,6 +22,11 @@ def main():
     p = sub.add_parser("import-detaily", help="dotáhne detaily nabídek ze Sreality (stav, rok, balkon, parkování)")
     p.add_argument("--limit", type=int, default=500)
 
+    p = sub.add_parser("doplnit-typ-parkovani",
+                        help="dohledá typ parkování (garáž/stání/venkovní) u nabídek, "
+                             "které detail dostaly před zavedením tohoto pole (jen Praha)")
+    p.add_argument("--limit", type=int, default=2000)
+
     sub.add_parser("ocenit", help="spočítá tržní hodnotu všech aktivních nabídek")
 
     p = sub.add_parser("prilezitosti", help="vypíše podhodnocené nabídky")
@@ -48,6 +53,9 @@ def main():
     elif a.cmd == "import-detaily":
         from . import sreality_detail
         sreality_detail.import_detaily(a.limit)
+    elif a.cmd == "doplnit-typ-parkovani":
+        from . import sreality_detail
+        sreality_detail.doplnit_typ_parkovani(a.limit)
     elif a.cmd == "ocenit":
         from . import valuation
         valuation.ocenit_vse()

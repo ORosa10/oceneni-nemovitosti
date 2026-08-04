@@ -358,7 +358,7 @@ function detail(i,tr){
       <div class="kv sum"><span>= Výsledná cena/m² (koef. celkem ${r.koef_celkem??'–'})</span><b>${fmt(r.vysledna_cena_m2)} Kč</b></div>
       <div class="kv step"><span>× plocha (efektivní)</span><b>× ${r.v_plocha_efektivni||r.plocha_m2||'–'} m²</b></div>
       <div class="kv sum"><span>= Cena za byt</span><b>${fmt(r.cena_za_byt)} Kč</b></div>
-      <div class="kv step"><span>+ příplatek (parkování: ${r.parkovani||'Ne'})</span><b>+ ${fmt(r.priplatky_czk)} Kč</b></div>
+      <div class="kv step"><span>+ příplatek (parkování: ${r.parkovani||'Ne'}${r.v_typ_parkovani?' — '+r.v_typ_parkovani:''}${r.v_koef_lokalita_parkovani?', koef. lokalita ×'+r.v_koef_lokalita_parkovani:''})</span><b>+ ${fmt(r.priplatky_czk)} Kč</b></div>
       <div class="kv sum total"><span>= Tržní hodnota</span><b>${fmt(r.trzni_hodnota)} Kč</b></div>
       <div class="kv"><span>Inzerovaná cena</span><b>${r.cena_czk==null?'na vyžádání':fmt(r.cena_czk)+' Kč'}</b></div>
       <div class="kv hi"><span>Rozdíl (sleva vs. tržní)</span><b>${pct(r.sleva_pct)}</b></div></div>
@@ -388,7 +388,7 @@ function detail(i,tr){
       <div class="kv"><span>Stav (pro výpočet)</span><b>${r.stav||'–'}</b></div>
       ${r.stav_sreality?`<div class="kv"><span>Stav (dle Sreality)</span><b>${r.stav_sreality}</b></div>`:''}
       <div class="kv"><span>Rok výstavby</span><b>${r.rok_vystavby||'–'}</b></div>
-      <div class="kv"><span>Balkon / parkování</span><b>${r.balkon||'–'} / ${r.parkovani||'–'}</b></div>
+      <div class="kv"><span>Balkon / parkování</span><b>${r.balkon||'–'} / ${r.parkovani||'–'}${r.typ_parkovani?' ('+r.typ_parkovani+')':''}</b></div>
       ${r.terasa_m2?`<div class="kv"><span>Terasa</span><b>${r.terasa_m2} m²</b></div>`:''}
       ${r.lodzie_m2?`<div class="kv"><span>Lodžie</span><b>${r.lodzie_m2} m²</b></div>`:''}
       ${r.balkon_m2?`<div class="kv"><span>Balkon (plocha)</span><b>${r.balkon_m2} m²</b></div>`:''}

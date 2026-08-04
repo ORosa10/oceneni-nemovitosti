@@ -91,6 +91,10 @@ def migruj(con):
                 "ALTER TABLE valuations ADD COLUMN v_plocha_vedlejsi_m2 REAL",
                 "ALTER TABLE valuations ADD COLUMN v_plocha_zahrada_m2 REAL",
                 "ALTER TABLE valuations ADD COLUMN v_plocha_efektivni REAL",
+                # Rozpad příplatku parkování pro zobrazení v appce (2026-08-04,
+                # viz valuation.py — typově a lokalitně rozlišený příplatek).
+                "ALTER TABLE valuations ADD COLUMN v_typ_parkovani TEXT",
+                "ALTER TABLE valuations ADD COLUMN v_koef_lokalita_parkovani REAL",
                 # Rozšíření mimo Prahu (2026-08, na žádost uživatele) — cenová
                 # mapa teď obsahuje i velká města Středočeského kraje (nad
                 # 5000 obyvatel, viz scripts/stredocesky_cenova_mapa.py).
@@ -104,7 +108,18 @@ def migruj(con):
                 # VŠECHNY nabídky jiného kraje (ty se logicky nemůžou objevit
                 # ve výsledcích vyhledávání jiného kraje, takže by vypadaly
                 # jako "zmizelé"). Viz src/sreality.py, import_sreality().
-                "ALTER TABLE listings ADD COLUMN kraj TEXT"):
+                "ALTER TABLE listings ADD COLUMN kraj TEXT",
+                # Typ parkování — Garáž/Stání/Venkovní (2026-08-04, na žádost
+                # uživatele, JEN PRAHA): reálný trh na Sreality má výrazně
+                # jinou cenu pro samostatnou garáž (medián ~990k Kč) než pro
+                # garážové stání (medián ~710k Kč) — dosavadní jediné
+                # PARKOVANI_KC=400k Kč tohle nerozlišovalo. Garáž/Stání se
+                # pozná ze strukturovaných polí Sreality (garage/parking_lots),
+                # Venkovní JEN textovou heuristikou v popisu (Sreality to jako
+                # vlastní pole nemá) — viz src/sreality_detail.py, _typ_parkovani().
+                # Střední Čechy zůstávají beze změny (PARKOVANI_KC), dokud
+                # uživatel neschválí totéž rozlišení i pro ten kraj.
+                "ALTER TABLE listings ADD COLUMN typ_parkovani TEXT"):
         try:
             con.execute(sql)
         except sqlite3.OperationalError:
@@ -123,7 +138,7 @@ CREATE TABLE IF NOT EXISTS listings (
     energeticky_stitek TEXT, patro INTEGER, pater_celkem INTEGER, vytah TEXT,
     sklep INTEGER, sklep_m2 REAL, zahrada_m2 REAL, typ_stavby TEXT, datum_vlozeni TEXT,
     plocha_cista_m2 REAL, terasa_m2 REAL, lodzie_m2 REAL, balkon_m2 REAL,
-    postoupeni_stav TEXT, stav_sreality TEXT,
+    postoupeni_stav TEXT, stav_sreality TEXT, typ_parkovani TEXT,
     UNIQUE (source, external_id)
 );
 CREATE TABLE IF NOT EXISTS price_map (
@@ -141,7 +156,7 @@ CREATE TABLE IF NOT EXISTS valuations (
     v_koef_vek_pct REAL, v_koef_balkon_pct REAL, v_koef_dalsi_pct REAL,
     v_vek_pouzity REAL, computed_at TEXT,
     v_plocha_jadro REAL, v_plocha_vedlejsi_m2 REAL, v_plocha_zahrada_m2 REAL,
-    v_plocha_efektivni REAL
+    v_plocha_efektivni REAL, v_typ_parkovani TEXT, v_koef_lokalita_parkovani REAL
 );
 """
 
