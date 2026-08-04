@@ -8,18 +8,24 @@ po jedné věci, každou změnu metodiky nechat výslovně schválit.
 
 ## 1. CO PROJEKT DĚLÁ (jednou větou)
 
-Každý den automaticky stáhne všechny inzeráty bytů na prodej v Praze ze
-Sreality.cz, spočítá jejich tržní hodnotu podle uživatelova oceňovacího
-modelu a ve webové appce ukáže, které nabídky jsou podhodnocené (sleva vůči
-tržní hodnotě) a jaký mají nájemní výnos. Uživatel nic nespouští — vše běží
-na serverech GitHubu.
+Každý den automaticky stáhne všechny inzeráty bytů na prodej v Praze a
+(od 2026-08) velkých městech Středočeského kraje ze Sreality.cz, spočítá
+jejich tržní hodnotu podle uživatelova oceňovacího modelu a ve webové
+appce ukáže, které nabídky jsou podhodnocené (sleva vůči tržní hodnotě)
+a jaký mají nájemní výnos. Uživatel nic nespouští — vše běží na serverech
+GitHubu.
 
-**Rozsah (důležité, upřesněno 2026-07-10): projekt řeší VÝHRADNĚ byty k
-prodeji v Praze.** Rodinné domy, pozemky, komerční prostory a nemovitosti
-mimo Prahu NEJSOU součástí importu ani ocenění — cenová mapa i celý model
-jsou kalibrované jen na byty. Když se v datech objeví nabídka, která je
-fakticky dům/řadovka prodávaná přes kategorii "byt" (viz bod 8), model ji
-i tak počítá bytovým vzorcem — o tom ví bod 8, řešení čeká na uživatele.
+**Rozsah (upřesněno 2026-07-10, rozšířeno 2026-08): projekt řeší VÝHRADNĚ
+byty k prodeji.** Rodinné domy, pozemky, komerční prostory NEJSOU součástí
+importu ani ocenění — cenová mapa i celý model jsou kalibrované jen na
+byty. Geograficky: Praha (všech ~99 čtvrtí) + velká města Středočeského
+kraje nad 5000 obyvatel (42 měst, viz sekce 10, 2026-08) — MENŠÍ obce
+Středočeského kraje se importují (celý kraj), ale nemají cenovou mapu,
+takže se automaticky deaktivují (žádná "tichá náhrada" — stejný mechanismus
+jako u pražských nabídek bez shody ve čtvrti). Když se v datech objeví
+nabídka, která je fakticky dům/řadovka prodávaná přes kategorii "byt"
+(viz bod 8), model ji i tak počítá bytovým vzorcem — o tom ví bod 8,
+řešení čeká na uživatele.
 
 ## 2. ODKAZY A UMÍSTĚNÍ
 
@@ -507,3 +513,278 @@ denním během.
   `lokalita_auto` odpovídala kategorii +5 % — možný samostatný bug
   v `ocenit_vse()` nesouvisející s touto úpravou, nebyl dál zkoumán,
   stojí za prověření příště.
+- 2026-07-28: na žádost uživatele nahrazen filtr u víceoborových polí
+  (Čtvrť, Dispozice, Energetický štítek) — dřív `<select multiple>` +
+  jedno souhrnné "vyloučit vybrané" — checklistem: každá položka má
+  vlastní zaškrtávátko (tick/křížek), defaultně vše zaškrtnuto (žádný
+  filtr), tlačítka "vše"/"žádné" pro rychlý postup "vyřaď vše, pak
+  ručně zaškrtni co chci". Zároveň přidán nový checklist filtr
+  "Stav (dle Sreality)" nad `stav_sreality` (surová kategorie ze
+  Sreality — Novostavba/Projekt/Před rekonstrukcí/Po rekonstrukci…),
+  odlišný od zjednodušeného 3-stavového `stav` používaného ve výpočtu.
+  Ověřeno jsdom testem (boot, odškrtnutí položky, "žádné"/"vše",
+  `reset()` correctly vrací vše na zaškrtnuto) před nasazením.
+- 2026-07-28: uživatel si všiml, že appka ukazuje jen 1 nabídku na
+  watchlistu, přestože jich přidal aspoň 10 — diagnostikován skutečný
+  bug, ne uživatelská chyba: workflow "Ruční úprava nabídky" sdílel
+  concurrency skupinu `aktualizace-dat` s denní/měsíční pipeline;
+  GitHub u `cancel-in-progress:false` drží ve frontě jen JEDEN čekající
+  běh na skupinu, takže rychlá série otevřených issues (nebo souběh
+  s denní pipeline) TICHO zrušila starší čekající běhy — issue zůstalo
+  navždy otevřené, bez chybové hlášky. Nalezeny 4 takhle ztracené issues
+  (#2, #3, #4, #10). Oprava: `uprava.yml` má teď vlastní concurrency
+  skupinu `uprava-<číslo issue>` (viz commit 341fe25), + všechny tři
+  workflow mají push zpevněný retry smyčkou místo `|| true` bez
+  opakování. Ručně dopsáno do databáze (commit 8038d20) — ALE první
+  pokus byl chybný: mylně jsem předpokládal, že všechny 4 issues byly
+  watchlist:1 (ověřil jsem si to jen u #2), zatímco #3/#4/#10 byly ve
+  skutečnosti celé editační formuláře (stav/rok/balkon/parkování/
+  lokalita). Opraveno v commitu f96c6ce (watchlist vrácen na 0 tam, kam
+  nepatřil, doplněny skutečné hodnoty z těla issues) + comment na
+  GitHubu na všech 3 dotčených issues s vysvětlením chyby. Poučení:
+  nikdy nepředpokládat obsah issue z názvu/kontextu sousedních issues —
+  vždy si přečíst tělo KAŽDÉHO jednotlivě před zápisem.
+- 2026-07-30: uživatel se ptal na konkrétní byt (Košíře, Vrchlického,
+  id 1865, 4. patro ze 7, panelák) se slevou 46,5 % — Sreality pole
+  `garden_area` bylo 500 m², ale popis mluvil jen o "vlastní klidný
+  vnitroblok domu" (dětské atrakce, pískoviště), žádná zmínka o podílu.
+  Sdílený vnitroblok velkého domu (klidně 20-30 bytů) bez definovaného
+  podílu nemá pro JEDEN byt soukromou hodnotu — započítání celých
+  500 m² × 0,15 do efektivní plochy (78→153 m²) dělalo tržní hodnotu
+  skoro dvojnásobnou. Uživatel rozlišil: sdílená zahrada domu s výslovně
+  napsaným podílem (typicky menší domy) = reálná ocenitelná hodnota;
+  velký nerozdělený vnitroblok/pozemek bez podílu = neoceňovat vůbec.
+  Implementováno jako heuristika na slovo "podíl" v popisu inzerátu
+  (`_zahrada_m2()` v `src/sreality_detail.py`, stejný princip jako
+  anuita/postoupení) — bez podílu se `zahrada_m2` nezapisuje (None),
+  i když `garden_area` je vyplněné. Backfill: `detail_at=NULL` pro
+  352 nabídek s dosud vyplněnou zahrada_m2 (přehodnotí se v běžném
+  denním běhu, 352 < 500/den limit). Commit 3433bd1.
+- 2026-08: uživatel se zeptal, jestli jsme "ready" rozšířit appku i na
+  Střední Čechy — po prozkoumání (viz PLÁN níže) schváleno ve dvou
+  krocích s explicitním rozhodnutím uživatele: (1) cenová mapa jen pro
+  velká města Středočeského kraje nad 5000 obyvatel (ne celý kraj — moc
+  malých obcí s pár transakcemi/rok, nespolehlivá cena/m²), (2) zůstat
+  jen u bytů, žádné rodinné domy (ty by chtěly úplně jiný oceňovací
+  model — pozemek, zastavěná plocha).
+  - **Cenová mapa** (commit afd4cf8): Sreality má pro kraje 3stupňovou
+    hierarchii (kraj → 12 okresů → obce), na rozdíl od ploché pražské
+    stránky — nový `scripts/stredocesky_cenova_mapa.py` dělá 1+12
+    requestů. Filtr na velká města: `data/mesta_stredocechy.csv`
+    (42 měst, zdroj: Wikipedie "Seznam měst ve Středočeském kraji",
+    stav ~2023 — je to seznam obcí s oficiálním STATUSEM města, ne
+    čistě podle populace; při hraní si s uživatelem vyšlo najevo, že
+    Horoměřice mají dle novějšího zdroje už 5496 obyvatel, ale nemají
+    status města, takže na seznamu chybí — známá mezera, neřešeno na
+    žádost uživatele ("neřeš to"), k případné revizi později.
+  - `price_map.csv`/DB: nový sloupec `kraj` (Praha/Středočeský) — každý
+    regionální scraper smí přepisovat JEN svoje řádky (vzájemně
+    ověřeno testem).
+  - **Bug nalezený cestou**: `_ctvrt()` v `src/sreality.py` mimo Prahu
+    bral `citypart` stejně jako u Prahy (rozdělit podle pomlčky) — u
+    Sreality mimo Prahu je ale `citypart` tvar "Beroun-Závodí" (místní
+    část obce), takže by to vytáhlo "Závodí" místo "Beroun" a nabídka
+    by v cenové mapě nenašla shodu. Oprava: mimo Prahu (`city != "Praha"`)
+    se bere přímo `city`. Ověřeno na reálném API vzorku, Praha beze
+    změny chování.
+  - **Druhý, závažnější bug nalezený cestou** (commit bcd50b5, KRITICKÝ
+    před zapojením importu): `import_sreality()` deaktivovalo "zmizelé"
+    nabídky globálně přes všechny kraje (`WHERE source='sreality' AND
+    active=1`, bez ohledu na region) — import Středočeského kraje by
+    logicky "neviděl" žádnou pražskou nabídku ve svých výsledcích, a
+    pojistka (`len(videne) > 50 % aktivních`) by u větší dávky
+    středočeských nabídek klidně mohla vyhodnotit "zmizelo přes 50 %"
+    a deaktivovat VŠECHNY pražské nabídky. Oprava: nový sloupec
+    `listings.kraj` (odvozený z `locality_region_id` při importu),
+    deaktivační dotaz i počítání aktivních teď scoped přes
+    `WHERE kraj=:kraj`. Jednorázový backfill: všech 6747 stávajících
+    sreality nabídek dostalo `kraj='Praha'` (jisté, ne odhad — do té
+    chvíle se importovala jen Praha). Ověřeno testem: scénář s 5
+    novými středočeskými nabídkami (>50 % z celkových 7 aktivních)
+    by pod starým kódem smazal aktivní flag pražským nabídkám — nový
+    kód je nechal beze změny.
+  - **Import zapojen do denní pipeline** (commit 0de97df):
+    `python -m src.main import-sreality ".../byty/stredocesky-kraj"
+    --max-stranek 25` (celý kraj má ~1942 nabídek byty/prodej celkem,
+    kapacita 2500). Nabídky mimo těch 42 velkých měst nenajdou shodu
+    v cenové mapě a automaticky se deaktivují — stejný mechanismus,
+    který už roky běží u pražských nabídek bez shody ve čtvrti, žádná
+    nová logika.
+  - Všechno ověřeno na mock datech (reálně zachycená struktura ze
+    Sreality přes Claude in Chrome) PŘED nasazením, plus end-to-end
+    test s testovací nabídkou. Skutečný běh cenové mapy i denní
+    pipeline po nasazení ověřen přímo v GitHub Actions.
+  - **Ostrý běh po zapojení (2026-08-03, run #113, commit c3ded45)**:
+    naimportováno 1374 středočeských nabídek, 1336 z nich se podařilo
+    ocenit (97 %), 38 bez ocenění (chybí detailní data typu plocha_m2,
+    ne nutně chybějící shoda v cenové mapě — u části z nich je i
+    Beroun/Kladno/Kolín, které cenovou mapu MAJÍ). Nalezeno 142 nových
+    příležitostí (sleva ≥ 10 %) jen ve Středních Čechách.
+
+- **Oddělení Prahy a Středních Čech v UI** (2026-08-03, commit 02e5d03,
+  na žádost uživatele — "prahu a stredocesky bych oddelil"): appka
+  dřív ukazovala oba kraje pomíchané v jedné tabulce. Teď `index.html`
+  bez `?kraj=` parametru zobrazí výběrovou stránku (karty Praha /
+  Střední Čechy, živé počty nabídek a příležitostí z `data.json`).
+  Kliknutím se otevře STEJNÉ rozhraní jako doteď (filtry, tabulka,
+  detail, peer group), ale s `?kraj=praha` nebo `?kraj=stredocesky`:
+  - `ALL` (nabídky) i `MAPA` (cenová mapa) se filtrují na daný kraj
+    HNED po načtení `data.json` — zbytek appky (checklist filtry
+    Čtvrť/Dispozice/Stav/Štítek, tabulka, peer group, detail) o
+    druhém kraji vůbec neví.
+  - Checklist "Čtvrť" se teď generuje jen z nabídek daného kraje —
+    důležité, protože Praha a Střední Čechy mají úplně jiné
+    čtvrti/obce (žádná společná množina, žádné riziko záměny).
+  - V appce je nahoře odkaz `⇄ vybrat jiný kraj` (vede na `?`, tedy
+    zpět na výběrovou stránku).
+  - Neplatný/chybějící `kraj` parametr → bezpečný default: zobrazí se
+    výběrová stránka (ne prázdná appka, ne obě data pomíchaně).
+  - Žádná změna v oceňovací logice ani v `build_static.py` (jeden
+    `data.json` pro oba kraje zůstává, jen se v appce filtruje podle
+    parametru) — všechno jen `src/static/index.html`.
+  - Ověřeno jsdom testem (4 scénáře: bez parametru, praha, stredocesky,
+    neplatný parametr) proti mock i reálným produkčním datům (6257
+    nabídek), a pak přímo živě na GitHub Pages přes Claude in Chrome
+    (landing ukázal správné počty 4883/637 Praha, 1374/142 Střední
+    Čechy; `?kraj=praha` scoped appka měla 99 čtvrtí a title
+    "— Praha").
+
+- **Typově a lokalitně rozlišený příplatek parkování** (2026-08-04, commit
+  28c5f23, JEN PRAHA, na žádost uživatele): uživatel se zeptal, jestli
+  pevných 400 000 Kč za parkování (`PARKOVANI_KC`, hodnota 1:1 z
+  uživatelova originálního Excelu, buňka BM5 — bez komentáře/vzorce,
+  jen ruční číslo, ověřeno diagnostikou) sedí i pro Střední Čechy, a
+  navrhl rozlišit garáž / stání ve velké garáži / venkovní stání.
+  - **Reálný trh (Sreality, 2026-08-04)**: zjišťováno přímo přes
+    Sreality API (Claude in Chrome, stejný endpoint jako import) —
+    samostatná garáž v Praze medián 990 000 Kč (n=86, průměr 1 209 910,
+    rozsah 350k–3,78M), garážové stání medián 710 000 Kč (n=67 po
+    vyřazení 1 zjevně chybného outlieru — "801 m² za 15 mil. Kč" =
+    více stání najednou). Venkovní stání Sreality NErozlišuje jako
+    kategorii ani jako datový příznak u bytů — bez spolehlivého čísla.
+  - **Uživatel schválil kulatá čísla**: Garáž 1 000 000 Kč, Stání
+    750 000 Kč, Venkovní 500 000 Kč (venkovní bez tržního podkladu,
+    uživatelův odhad).
+  - **Lokalitní koeficient** (uživatelův návrh): koef = cena_mapy dané
+    čtvrti / průměr Prahy (100 čtvrtí, prostý průměr = 145 259 Kč/m²),
+    OMEZENO na rozsah ⟨0,8; 1,2⟩ — bez omezení by rozsah byl 0,68–2,15
+    (ověřeno na reálné cenové mapě), takže cap skutečně něco dělá.
+  - **Rozlišení Garáž/Stání/Venkovní**: Sreality má u detailu bytu
+    strukturovaná pole `garage`/`garage_count` (garáž) a
+    `parking`/`parking_lots` (nějaké parkovací místo) — spolehlivé,
+    ne heuristika. Venkovní ale Sreality strukturovaně nerozlišuje
+    vůbec, takže se hledá JEN textovou heuristikou v popisu ("venkovní
+    stání/parkování", "nekryté stání", "otevřené stání") — stejný typ
+    heuristiky jako anuita_stav/postoupeni_stav, výslovně jako méně
+    jistá. Priorita: Garáž > (text) Venkovní > Stání (výchozí, protože
+    "garážové stání" je v inzerátech běžnější formulace) > žádné.
+  - **Nový sloupec `listings.typ_parkovani`**, nastavuje se v
+    `import_detaily()` (nové nabídky automaticky) a přes novou funkci
+    `doplnit_typ_parkovani()` (dohání starší nabídky, které detail
+    dostaly PŘED zavedením pole — `import_detaily` se řídí
+    `detail_at IS NULL`, takže by je normálně nikdy znovu nenavštívilo).
+  - **Jednorázový backfill** (mimo běžnou pipeline, přes Claude in
+    Chrome — sandbox nemá přímý síťový přístup na sreality.cz):
+    1742 existujících pražských nabídek s `parkovani` Ano/Ano 2*,
+    klasifikováno: 911 Garáž, 789 Stání, 26 Venkovní, 16 bez parkování
+    přes strukturovaná pole (`parkovani`="Ano" jen z textu/edge-case).
+    Nula chyb při dotahování. Zbylo ~649 nabídek z importu ze stejného
+    dne (mezi mým prvním a druhým dotazem na DB) — ty dojedou přes nový
+    krok v denní pipeli (`doplnit-typ-parkovani`, 500/den, stejné tempo
+    jako `import-detaily`).
+  - **Střední Čechy beze změny**: žádná reálná tržní data k dispozici
+    pro ten kraj — `PARKOVANI_KC`=400k a koeficient lokality 1,0
+    (fixně) zůstávají, dokud uživatel neschválí totéž rozlišení i tam.
+  - `src/static/index.html`: detail nabídky teď u příplatku parkování
+    zobrazuje typ (Garáž/Stání/Venkovní) a koeficient lokality —
+    transparentní rozpad, stejně jako ostatní kroky výpočtu.
+  - Ověřeno na reálných produkčních datech (6218 aktivních nabídek,
+    spočítané `priplatky_czk` odpovídají typ × koef na korunu) a
+    jsdom testem detailu nabídky (text „příplatek (parkování: Ano —
+    Garáž, koef. lokalita ×1.024)" se vykresluje správně).
+
+- **Totéž rozšířeno na Střední Čechy** (2026-08-04, commit 574fd22,
+  navazuje na 28c5f23): uživatel se zeptal, jestli ceny sedí i pro
+  Střední Čechy.
+  - **Reálný trh (Sreality, 2026-08-04, region Středočeský)**: garáž
+    medián 699 000 Kč (n=55, průměr 718 192, rozsah 350k–1,29M);
+    garážové stání medián 395 000 Kč — ALE jen n=10 platných nabídek
+    v celém kraji (rozsah 200k–1,14M), výslovně upozorněno uživateli
+    jako málo spolehlivé. Venkovní stání opět bez dat (Sreality to
+    nerozlišuje ani tady).
+  - **Uživatel schválil**: Garáž 700 000 Kč, Stání 450 000 Kč (vyšší
+    než zjištěný medián 395k — uživatelova vlastní volba, ne můj
+    návrh), Venkovní 300 000 Kč (uživatelovo číslo, žádný tržní
+    podklad).
+  - **Koeficient lokality**: stejný mechanismus jako Praha (cena_mapy
+    města / průměr kraje, ⟨0,8; 1,2⟩), potvrzeno uživatelem. Bez capu
+    by rozsah byl 0,67–1,52 (Roztoky 60 750 Kč/m² nejlevnější, Černošice
+    137 280 Kč/m² nejdražší ze 43 měst v cenové mapě).
+  - `valuation.py`: `PARKOVANI_ZAKLAD_KRAJ` zobecněno na slovník
+    `{kraj: {typ: Kč}}` (dřív jen Praha, natvrdo). `koef_lok_park` teď
+    generický pro libovolný kraj v tomhle slovníku.
+  - `sreality_detail.py`: `doplnit_typ_parkovani()` zobecněna (dřív
+    `WHERE kraj='Praha'` natvrdo) — dohání typ parkování pro libovolný
+    kraj, kde chybí.
+  - **Jednorázový backfill** 341 středočeských nabídek s parkováním
+    (přes Sreality API, stejně jako Praha): 209 Stání, 119 Garáž,
+    11 Venkovní, 2 bez parkování přes strukturovaná pole (edge-case).
+    Nula chyb.
+  - Ověřeno na reálných produkčních datech — `priplatky_czk` odpovídá
+    typ × koef × počet na korunu, včetně správného clampování na
+    hranice 0,8 (Čáslav) a 1,2 (Brandýs nad Labem-Stará Boleslav).
+
+- **Oprava: stejnojmenné obce ve Středočeském kraji v jiném okrese**
+  (2026-08-04, commit c98e736): uživatel chtěl odkaz na cenovou mapu a
+  na nabídku v Roztokách — při tom vyšel najevo skutečný bug, ne jen
+  dotaz na odkaz.
+  - **Bug**: Sreality má ve Středočeském kraji STEJNÁ jména obcí ve
+    RŮZNÝCH okresech — "Roztoky" existují jako velké město v okrese
+    Praha-západ (8971 obyv., na našem seznamu velkých měst) i jako
+    malá vesnice v okrese Rakovník; totéž "Jesenice" (Praha-západ vs.
+    Rakovník). `scripts/stredocesky_cenova_mapa.py` i `src/sreality.py`
+    matchovaly a klíčovaly čtvrť JEN podle normalizovaného jména, bez
+    ohledu na okres — starý komentář v kódu doslova tvrdil "jedno
+    město nemůže být ve více okresech? ne", což bylo mylné.
+  - **Reálný dopad (zjištěno před opravou)**: `price_map.csv` měl u
+    klíče `roztoky` hodnotu 60 750 Kč/m² — neodpovídala AKTUÁLNÍ ceně
+    ani jednoho z obou okresů, zbytek z doby, kdy scraper "vyhrál"
+    malou vesnici v Rakovníku. Všech 7 aktivních nabídek v Roztokách
+    (adresy jasně Roztoky u Prahy — Lederova, Masarykova, Lidická,
+    Braunerova) se tak oceňovalo cenou špatné (levné) obce. Sleva vůči
+    "tržní hodnotě" u nich vycházela −49 % až −126 % (vypadaly jako
+    extrémně přeplacené), ve skutečnosti šlo o chybu modelu, ne o
+    realitu trhu. Stejný pattern u Jesenice (9 správných + 1 skutečně
+    z Rakovníka).
+  - **Ověření disambiguace**: Sreality API u každé nabídky (`locality.
+    municipality_id`) odpovídá přesně `entityId` z cenové mapy na
+    úrovni obce — spolehlivý identifikátor, ne heuristika (na rozdíl
+    od venkovního parkování výše).
+  - **Oprava (obecná, ne hardcoded na Roztoky/Jesenice)**:
+    `src/sreality.py` `_ctvrt()` teď u každého z 43 velkých měst ověří
+    okres nabídky (pole `district` ze Sreality) proti okresu
+    zaznamenanému v `data/mesta_stredocechy.csv`; při nesouladu připojí
+    okres k názvu (např. "Roztoky (Rakovník)"), takže nabídka nenajde
+    shodu v cenové mapě a spadne do stávajícího mechanismu "bez shody →
+    deaktivovat" — stejně jako jakákoli jiná malá obec mimo seznam,
+    žádný nový speciální kód.
+    `scripts/stredocesky_cenova_mapa.py` `aktualizuj()` teď při stahování
+    cenové mapy stejně ověřuje okres každé nalezené obce; stejnojmennou
+    obec v jiném okrese přeskočí a vypíše do logu, nezapíše ji pod
+    špatný klíč.
+  - **Jednorázová manuální korekce**: `price_map.csv`/DB řádek `roztoky`
+    opraven na 132 675 Kč/m² (40 transakcí, reálná aktuální hodnota pro
+    Praha-západ). Listing id 8000 (Roztoky) a 7844 (Jesenice) — obě
+    skutečně v okrese Rakovník — přesunuty na disambiguovaný název čtvrti
+    a korektně deaktivovány (bez shody v mapě).
+  - **Výsledek po přepočtu** (`python -m src.main ocenit`): 2 nabídky
+    správně deaktivovány. Zbylých 6 aktivních Roztok (Praha-západ) mělo
+    PŘED opravou slevu −49 % až −126 %, PO opravě: +30,22 %, +26,54 %,
+    −3,38 %, 0,0 %, +16,46 %, −3,59 % — 3 z nich jsou reálné podhodnocené
+    příležitosti, které bug dřív skrýval.
+  - **Neřešeno / čeká na uživatele**: nájemní výnos pro Středočeský
+    kraj — MFČR benchmark mapa pokrývá jen katastrální území Prahy,
+    takže z 1340 středočeských nabídek má nájem/výnos spočítaný jen 1
+    (0,07 % vs. 98,9 % u Prahy). Uživatel se zeptal na cenovou mapu a
+    Roztoky, otázku k nájmům jsem mu vysvětlil, ale ještě nerozhodl, co
+    s tím dál (jiný zdroj dat, nebo to tak zůstane).
