@@ -796,9 +796,55 @@ denním během.
     jsem si při první opravě nezaznamenal — jen jsem u 7844 udělal
     chybnou manuální korekci, viz výše; oprava kódu i tak funguje
     správně, ověřeno na obou listingách 8000 i 8337.)
-  - **Neřešeno / čeká na uživatele**: nájemní výnos pro Středočeský
-    kraj — MFČR benchmark mapa pokrývá jen katastrální území Prahy,
-    takže z 1340 středočeských nabídek má nájem/výnos spočítaný jen 1
-    (0,07 % vs. 98,9 % u Prahy). Uživatel se zeptal na cenovou mapu a
-    Roztoky, otázku k nájmům jsem mu vysvětlil, ale ještě nerozhodl, co
-    s tím dál (jiný zdroj dat, nebo to tak zůstane).
+  - **Update 2026-08-04**: nájemní pokrytí Středních Čech (0,07 %) bylo
+    mezitím vyřešeno, viz další záznam níže — uživatel dal jiný zdroj
+    dat, ne že by to tak zůstalo.
+
+- **Nájemní benchmark MFČR: celostátní XLSX namísto scrapingu jen Prahy**
+  (2026-08-04, commit 0525b2d, na návrh uživatele): uživatel při ukázce
+  cenové mapy nájemného narazil na to, že MFČR na stejné stránce nabízí i
+  strukturovaný XLSX "Cenová mapa - tabulkové výstupy" pokrývající
+  VŠECHNY kraje ČR — ne jen samostatnou mapu pro Prahu, kterou jsme
+  scrapovali doteď (regex na textové popisky z Leaflet mapy, `Mapa_Praha`
+  widget). Uživatel: "ten excel je možná lepší než se snažit scrapovat tu
+  mapu, ten má ta data mnohem lépe organizovaná".
+  - **Zdroj**: list "Cenové mapy nájemného" v XLSX (aktualizuje se 4x
+    ročně, URL se hledá dynamicky na stránce MFČR, ne natvrdo). Sloupce
+    Kraj/Katastrální území/Obec/Kód obce + 4 opakující se bloky (VK1-4 =
+    velikostní kategorie bytu 1+kk…4+ pokojů) se sloupcem "Nájemné
+    referenčního bytu za m² v Kč za 1 měsíc".
+  - **Praha**: matchuje se podle katastrálního území stejně jako dřív
+    (1:1, žádná změna výstupního formátu pro `src/valuation.py`).
+  - **Střední Čechy**: náš model matchuje nájem na úroveň celé OBCE, ale
+    velká města mají v XLSX víc katastrálních území (Kladno: 7 — Kladno,
+    Dubí u Kladna, Kročehlavy, Motyčín, Rozdělov, Vrapice, Hnidousy).
+    Agreguje se **prostým průměrem** přes všechna katastrální území
+    obce — schváleno uživatelem: "pro prvotní screening asi můžeme
+    pracovat s průměry a pak při tom detailnějším hledání to nějak
+    zohlední a upraví si podle toho koeficient lokality" (přesnější
+    rozlišení čtvrtí uvnitř obce je vědomě mimo scope automatického
+    modelu).
+  - **Stejná kolize jmen jako u cenové mapy bytů (Roztoky, Jesenice, viz
+    záznam výše)** se objevila i tady — XLSX má obě jména víckrát pod
+    různým "Kód obce". Rozlišeno přes Kód obce, ověřeno webovým
+    vyhledáváním proti RUIAN/ČSÚ registru obcí: Roztoky Praha-západ =
+    539627 (ne 598526 = Roztoky Rakovník), Jesenice Praha-západ = 539325
+    (ne 540391/541834 = jiné Jesenice mimo náš seznam). **Důležité
+    rozlišení**: víc řádků se stejnou obcí a RŮZNÝM Kód obce je u
+    velkých měst běžné a NENÍ to kolize (každé katastrální území má
+    vlastní kód) — skutečná kolize se pozná podle víc než 1 řádku se
+    stejnou obcí a PRÁZDNÝM katastrálním územím (malé, dál nedělené obce
+    sdílející jméno). Ověřeno na celém Středočeském kraji: 49 takových
+    jmen, z našich 43 velkých měst jen tato dvě.
+  - **Bezpečnostní pojistka**: nová, dosud neznámá kolize (mimo tyto dvě)
+    shodí skript s chybou, ne tichý výběr prvního řádku — testováno
+    syntetickým příkladem.
+  - **Ověření před nasazením**: end-to-end test na syntetickém XLSX
+    (openpyxl, včetně testu kolize i bezpečnostní pojistky) + logika
+    porovnána s reálnými daty přes SheetJS v prohlížeči (Kladno průměr
+    VK1 = 318,4 sedí na desetinu, Roztoky správně vybere kód 539627 a
+    vynechá 598526, 43/43 velkých měst má po přepočtu pokrytí, 0 nových
+    kolizí, 112 pražských katastrálních území).
+  - **Výsledek po nasazení a automatickém běhu pipeline** (run #121):
+    pokrytí nájmu ve Středních Čechách vyskočilo z 0,07 % (1/1340) na
+    **97,0 % (1341/1382)** — na úrovni Prahy (96,2 %, 4698/4885).
