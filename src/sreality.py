@@ -16,6 +16,31 @@ from . import db
 # Matice hodnocení lokality (kalibruje se v data/lokalita_matice.csv):
 # kritéria = vzdálenosti k POI ze Sreality; skóre → kategorie lokality modelu.
 MATICE_CSV = db.ROOT / "data" / "lokalita_matice.csv"
+
+# Rozlišení stejnojmenných obcí v jiném okrese (2026-08-04, oprava zjištěného
+# bugu — viz PREDAVACI.md a scripts/stredocesky_cenova_mapa.py): Středočeský
+# kraj má obce se STEJNÝM jménem v RŮZNÝCH okresech (potvrzeno na Sreality
+# API, 2026-08-04: "Roztoky" existují v okrese Praha-západ — velké město na
+# našem seznamu — i jako malá obec v okrese Rakovník; totéž "Jesenice").
+# Bez rozlišení podle okresu by nabídka z malé obce omylem dostala cenu
+# velkého města se stejným jménem (nebo naopak) — zjištěno na 2 konkrétních
+# aktivních nabídkách (Roztoky id 8000, Jesenice id 7844), obě reálně
+# v okrese Rakovník, obě omylem oceněné cenou Praha-západ.
+MESTA_STC_CSV = db.ROOT / "data" / "mesta_stredocechy.csv"
+
+
+def _nacti_mesta_okresy() -> dict:
+    """{název velkého města (lowercase): okres} z data/mesta_stredocechy.csv."""
+    mapa = {}
+    if not MESTA_STC_CSV.exists():
+        return mapa
+    with open(MESTA_STC_CSV, encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            mapa[row["nazev"].strip().lower()] = row["okres"].strip()
+    return mapa
+
+
+MESTA_OKRESY = _nacti_mesta_okresy()
 KAT_PLUS = "u MHD / metro, u obchodu a služeb, tiché místo, parky v docházce"
 KAT_STANDARD = "standardní dostupnost, běžná občanská vybavenost, žádné extrémy"
 KAT_MINUS = "daleko od MHD/služeb, hluk / bariéry (rušná silnice, železnice), horší pěší dostupnost"
@@ -108,10 +133,22 @@ def _ctvrt(locality) -> str:
     'Beroun-Závodí' (místní část obce) — kdyby se použila stejná logika
     jako u Prahy (vzít citypart, rozdělit podle pomlčky), vytáhlo by to
     'Závodí' místo 'Beroun' a nabídka by v cenové mapě nenašla shodu.
-    Ověřeno na reálném vzorku (Sreality API, kraj Středočeský)."""
+    Ověřeno na reálném vzorku (Sreality API, kraj Středočeský).
+
+    Rozlišení stejnojmenných obcí v jiném okrese (viz MESTA_OKRESY výše):
+    když se `city` shoduje s jedním z velkých měst ze seznamu, ale skutečný
+    okres nabídky (pole `district`) NESEDÍ s okresem zaznamenaným pro to
+    velké město, přidá se okres do názvu (např. "Roztoky (Rakovník)") —
+    nabídka tak nenajde shodu v cenové mapě (ta má jen tu SPRÁVNOU obec)
+    a spadne do standardního „bez shody → deaktivovat", stejně jako
+    jakákoli jiná malá obec mimo náš seznam. Žádná tichá záměna cen."""
     if isinstance(locality, dict):
         city = str(locality.get("city") or "").strip()
         if city and city != "Praha":
+            okres_ocekavany = MESTA_OKRESY.get(city.lower())
+            okres_skutecny = str(locality.get("district") or "").strip()
+            if okres_ocekavany and okres_skutecny and okres_ocekavany != okres_skutecny:
+                return f"{city} ({okres_skutecny})"
             return city
         locality = locality.get("citypart") or city or ""
     s = str(locality or "")

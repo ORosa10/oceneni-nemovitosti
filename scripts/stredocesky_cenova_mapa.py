@@ -46,11 +46,19 @@ def _next_data(html: str) -> dict:
     return json.loads(m.group(1))
 
 
-def nacti_velka_mesta() -> set:
-    """Normalizované názvy měst nad 5000 obyvatel — jen tahle se do cenové
-    mapy zapíší, zbytek kraje se ignoruje (schváleno uživatelem)."""
+def nacti_velka_mesta() -> dict:
+    """{normalizovaný název: okres} měst nad 5000 obyvatel — jen tahle se
+    do cenové mapy zapíší, zbytek kraje se ignoruje (schváleno uživatelem).
+
+    Okres se používá k rozlišení STEJNOJMENNÝCH obcí v jiném okrese
+    (oprava bugu 2026-08-04, viz PREDAVACI.md): dřív se matchovalo jen
+    podle jména, takže "Roztoky" (Praha-západ, velké město na seznamu)
+    a malá vesnice "Roztoky" v okrese Rakovník sdílely stejný klíč a
+    přepisovaly se navzájem podle toho, který okres se zpracoval
+    poslední — bez ohledu na to, která je ta SPRÁVNÁ. Stejný problém
+    má "Jesenice" (Praha-západ vs. malá obec v Rakovníku)."""
     with open(MESTA_CSV, encoding="utf-8-sig") as f:
-        return {_norm(r["nazev"]) for r in csv.DictReader(f)}
+        return {_norm(r["nazev"]): r["okres"].strip() for r in csv.DictReader(f)}
 
 
 def nacti_stavajici_najmy():
@@ -107,13 +115,21 @@ def aktualizuj():
     ostatni = nacti_ostatni_kraje()
     okresy = stahni_okresy()
 
-    nalezeno = {}  # klic -> radek (jedno mesto muze byt ve vice okresech? ne, ale pro jistotu dedup)
+    nalezeno = {}  # klic -> radek
+    nespravny_okres = []
     for okres in okresy:
+        okres_nazev = okres["locality"]["name"]
         obce = stahni_obce_okresu(okres)
         for a in obce:
             nazev = a["locality"]["name"]
             klic = _norm(nazev)
             if klic not in velka_mesta:
+                continue
+            # Stejnojmenná obec v JINÉM okrese, než je ta na seznamu velkých
+            # měst (viz nacti_velka_mesta výše) — přeskočit, i když se jmenuje
+            # stejně, NENÍ to město ze seznamu.
+            if velka_mesta[klic] != okres_nazev:
+                nespravny_okres.append(f"{nazev} (okres {okres_nazev}, na seznamu je okres {velka_mesta[klic]})")
                 continue
             nalezeno[klic] = {
                 "klic": klic,
@@ -123,8 +139,11 @@ def aktualizuj():
                 "najem_m2_mesic": najmy.get(klic, ""),
                 "kraj": KRAJ_NAZEV,
             }
+    if nespravny_okres:
+        print(f"Přeskočeno {len(nespravny_okres)} stejnojmenných obcí v jiném okrese "
+              f"(nejsou na seznamu velkých měst): {nespravny_okres}")
 
-    chybi = velka_mesta - set(nalezeno)
+    chybi = set(velka_mesta) - set(nalezeno)
     if chybi:
         print(f"POZOR: {len(chybi)} velkých měst nemá cenu v Sreality cenové mapě "
               f"(pravděpodobně 0 transakcí za sledované období): {sorted(chybi)}")
