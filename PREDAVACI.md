@@ -774,14 +774,28 @@ denním během.
     špatný klíč.
   - **Jednorázová manuální korekce**: `price_map.csv`/DB řádek `roztoky`
     opraven na 132 675 Kč/m² (40 transakcí, reálná aktuální hodnota pro
-    Praha-západ). Listing id 8000 (Roztoky) a 7844 (Jesenice) — obě
-    skutečně v okrese Rakovník — přesunuty na disambiguovaný název čtvrti
-    a korektně deaktivovány (bez shody v mapě).
-  - **Výsledek po přepočtu** (`python -m src.main ocenit`): 2 nabídky
-    správně deaktivovány. Zbylých 6 aktivních Roztok (Praha-západ) mělo
+    Praha-západ). V okamžiku opravy jsem si přes Sreality API ověřil
+    okres jen u listingu 8000 (Roztoky) a manuálně ho i listing 7844
+    (Jesenice) přesunul na disambiguovaný název čtvrti — u 7844 to byl
+    OMYL: po nasazení kódové opravy a jejím prověření živě přes API se
+    ukázalo, že listing 7844 je ve skutečnosti Jesenice, Praha-západ
+    (district="Praha-západ" z detailu Sreality) — tedy ta SPRÁVNÁ
+    Jesenice ze seznamu velkých měst, ne ta z Rakovníka. Následný denní
+    automatický import (`ctvrt` je v `PREPSAT_VZDY`, přepisuje se při
+    každém importu) tuhle mou chybu sám opravil zpět na `ctvrt='Jesenice'`,
+    `active=1` — přesně jak má u správně zařazené obce být. Skutečná
+    „Jesenice v Rakovníku" je listing **8337** (ověřeno stejným
+    způsobem přes API), ten je korektně disambiguovaný na
+    "Jesenice (Rakovník)" a deaktivovaný.
+  - **Výsledek po přepočtu** (`python -m src.main ocenit`): listingy
+    8000 (Roztoky) a 8337 (Jesenice) správně deaktivovány jako „bez
+    shody v cenové mapě". Zbylých 6 aktivních Roztok (Praha-západ) mělo
     PŘED opravou slevu −49 % až −126 %, PO opravě: +30,22 %, +26,54 %,
     −3,38 %, 0,0 %, +16,46 %, −3,59 % — 3 z nich jsou reálné podhodnocené
-    příležitosti, které bug dřív skrýval.
+    příležitosti, které bug dřív skrýval. (Přesný výčet Jesenice před/po
+    jsem si při první opravě nezaznamenal — jen jsem u 7844 udělal
+    chybnou manuální korekci, viz výše; oprava kódu i tak funguje
+    správně, ověřeno na obou listingách 8000 i 8337.)
   - **Neřešeno / čeká na uživatele**: nájemní výnos pro Středočeský
     kraj — MFČR benchmark mapa pokrývá jen katastrální území Prahy,
     takže z 1340 středočeských nabídek má nájem/výnos spočítaný jen 1
