@@ -1,1 +1,1 @@
-Doplněn typ_parkovani: 10 nabídek (chyb: 0).
+Doplněn typ_parkovani: 11 nabídek (chyb: 0).
