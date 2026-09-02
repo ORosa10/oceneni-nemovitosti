@@ -1,5 +1,5 @@
 offset 0: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=0
-celkem nabídek dle API: 1913
+celkem nabídek dle API: 2030
 offset 100: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=100
 offset 200: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=200
 offset 300: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=300
@@ -19,5 +19,6 @@ offset 1600: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?catego
 offset 1700: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=1700
 offset 1800: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=1800
 offset 1900: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=1900
-Deaktivováno zmizelých nabídek (Středočeský): 103
-Importováno 1913 nabídek ze Sreality.
+offset 2000: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=11&limit=100&offset=2000
+Deaktivováno zmizelých nabídek (Středočeský): 22
+Importováno 2030 nabídek ze Sreality.
