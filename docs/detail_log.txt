@@ -1,1 +1,3 @@
-Detaily dotaženy: 93 nabídek (chyb: 0).
+chyba u 3689230412: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+chyba u 3746902092: ('Connection broken: IncompleteRead(13655 bytes read, 38211 more expected)', IncompleteRead(13655 bytes read, 38211 more expected))
+Detaily dotaženy: 126 nabídek (chyb: 2).
