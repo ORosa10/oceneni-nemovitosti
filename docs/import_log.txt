@@ -1,5 +1,5 @@
 offset 0: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=0
-celkem nabídek dle API: 5500
+celkem nabídek dle API: 5530
 offset 100: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=100
 offset 200: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=200
 offset 300: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=300
@@ -54,5 +54,6 @@ offset 5100: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?catego
 offset 5200: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=5200
 offset 5300: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=5300
 offset 5400: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=5400
-Deaktivováno zmizelých nabídek (Praha): 146
-Importováno 5500 nabídek ze Sreality.
+offset 5500: HTTP 200, url: https://www.sreality.cz/api/v1/estates/search?category_type_cb=1&category_main_cb=1&locality_region_id=10&limit=100&offset=5500
+Deaktivováno zmizelých nabídek (Praha): 100
+Importováno 5530 nabídek ze Sreality.
