@@ -46,10 +46,22 @@ Buď stručný, žádné dlouhé úvody.
   — ta zůstává výhradně v `src/valuation.py` (CLAUDE.md hard rules).
 - **Ruční spuštění:** GitHub → Actions → „Týdenní report příležitostí" → Run workflow.
 
-## Měsíční přehled (artefakt) — na GPT odpadá
-Původní úloha `oceneni-prehled-refresh` obnovovala Cowork **artefakt**, což je
-funkce Claude/Coworku a v ChatGPT ekvivalent nemá. Náhrada: používej rovnou
-živou appku `https://orosa10.github.io/oceneni-nemovitosti/` (stejná data,
-aktualizuje se denně sama), případně `docs/weekly_report.md`. Pokud bys chtěl
-i statický měsíční „přehled" v repu, dá se doplnit stejným způsobem jako
-týdenní report (Action + malý skript) — řekni si.
+## Měsíční přehled (náhrada Cowork artefaktu)
+Původní úloha `oceneni-prehled-refresh` obnovovala Cowork **artefakt** (funkce
+Claude/Coworku, v ChatGPT ekvivalent nemá). Nahrazena stejným principem jako
+týdenní report:
+- **GitHub Action** `.github/workflows/monthly_overview.yml` (cron 2. den v
+  měsíci) spustí `scripts/monthly_overview.py` a commitne
+  **`docs/monthly_overview.md`** (sazba hypotéky, cenová mapa, aktivní nabídky,
+  příležitosti ≥10 %, watchlist, top 8 — stejný obsah jako měl artefakt).
+- Raw: `https://raw.githubusercontent.com/ORosa10/oceneni-nemovitosti/main/docs/monthly_overview.md`
+- Živá appka se stejnými daty pořád běží na `https://orosa10.github.io/oceneni-nemovitosti/`.
+
+**ChatGPT Task (měsíční, volitelné):** rozvrh 2.–3. den v měsíci, prompt:
+```
+Jsi naplánovaná úloha v ChatGPT. Jednou měsíčně otevři (browsing)
+https://raw.githubusercontent.com/ORosa10/oceneni-nemovitosti/main/docs/monthly_overview.md
+a zobraz mi jeho obsah v češtině tak, jak je (souhrn + tabulka top 8). Když
+soubor nejde stáhnout nebo je datum "Data vygenerována" starší než ~35 dní,
+napiš to. Nic nedomýšlej.
+```
