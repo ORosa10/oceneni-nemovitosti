@@ -1,5 +1,10 @@
 # Naplánované úlohy + migrace na nový Claude — handoff
 
+> **▶ START ZDE:** Přečti celý tento soubor a založ obě naplánované úlohy **1:1**
+> podle sekcí níže — u každé použij přesně uvedený `cron` a **doslovný** prompt
+> z code bloku. U úlohy 2 dodrž krok **4a** (artefakt se na novém účtu vytvoří
+> znovu). Po založení u každé spusť „Run now" pro ověření, že report přijde do chatu.
+
 Doplněk k `PREDAVACI.md` a `CLAUDE.md`. Popisuje 2 naplánované Cowork úlohy
 tohoto projektu a jak je obnovit na **novém Claude účtu** (Cowork), kdyby ses
 přesunul jinam. Vlastní denní/měsíční pipeline (import ze Sreality → ocenění →
