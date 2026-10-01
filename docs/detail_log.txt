@@ -1,1 +1,2 @@
-Detaily dotaženy: 165 nabídek (chyb: 0).
+chyba u 4048887884: 404 Client Error: Not Found for url: https://www.sreality.cz/api/v1/estates/4048887884
+Detaily dotaženy: 137 nabídek (chyb: 1).
