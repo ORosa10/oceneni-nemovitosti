@@ -1,2 +1,1 @@
-chyba u 527634508: 404 Client Error: Not Found for url: https://www.sreality.cz/api/v1/estates/527634508
-Detaily dotaženy: 120 nabídek (chyb: 1).
+Detaily dotaženy: 222 nabídek (chyb: 0).
